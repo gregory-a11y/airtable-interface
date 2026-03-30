@@ -1,0 +1,28 @@
+services:
+  prod:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: galden-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./env/prod.env
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+
+  dev:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: galden-dev
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    env_file:
+      - ./env/dev.env
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
