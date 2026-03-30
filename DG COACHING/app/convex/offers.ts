@@ -1,12 +1,10 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+
 
 export const list = query({
 	args: { activeOnly: v.optional(v.boolean()) },
 	handler: async (ctx, { activeOnly }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		if (activeOnly) {
 			return await ctx.db
 				.query("offers")
@@ -51,10 +49,6 @@ export const create = mutation({
 		providers: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-		const caller = await ctx.db.get(userId);
-		if (caller?.role !== "admin") throw new Error("Admin requis");
 
 		return await ctx.db.insert("offers", {
 			...args,
@@ -75,8 +69,6 @@ export const update = mutation({
 		recurringAmount: v.optional(v.number()),
 	},
 	handler: async (ctx, { id, ...fields }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		const updates: Record<string, unknown> = {};
 		for (const [k, val] of Object.entries(fields)) {
 			if (val !== undefined) updates[k] = val;
@@ -88,8 +80,6 @@ export const update = mutation({
 export const toggleActive = mutation({
 	args: { id: v.id("offers") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		const offer = await ctx.db.get(id);
 		if (!offer) throw new Error("Offre introuvable");
 		await ctx.db.patch(id, { active: !offer.active });

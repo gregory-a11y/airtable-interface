@@ -26,39 +26,59 @@ import {
 	Play,
 	User,
 	Users,
-	MessageSquare,
 	History,
+	Loader2,
+	DollarSign,
+	Zap,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 const ETAPES = [
-	{ id: "appel_a_venir", label: "Appel a venir", color: "bg-blue-100 text-blue-700" },
-	{ id: "appel_du_jour", label: "Appel du jour", color: "bg-amber-100 text-amber-700" },
-	{ id: "follow_up", label: "Follow up", color: "bg-violet-100 text-violet-700" },
-	{ id: "no_show", label: "No show", color: "bg-orange-100 text-orange-700" },
-	{ id: "en_attente", label: "En attente", color: "bg-slate-100 text-slate-700" },
-	{ id: "close", label: "Close", color: "bg-emerald-100 text-emerald-700" },
-	{ id: "perdu", label: "Perdu", color: "bg-red-100 text-red-700" },
+	{ id: "appel_a_venir", label: "Appel a venir", color: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20", activeColor: "bg-blue-600 text-white" },
+	{ id: "appel_du_jour", label: "Appel du jour", color: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20", activeColor: "bg-amber-600 text-white" },
+	{ id: "follow_up", label: "Follow up", color: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-500/20", activeColor: "bg-violet-600 text-white" },
+	{ id: "no_show", label: "No show", color: "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-500/20", activeColor: "bg-orange-600 text-white" },
+	{ id: "en_attente", label: "En attente", color: "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-500/20", activeColor: "bg-gray-600 text-white" },
+	{ id: "close", label: "Close", color: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20", activeColor: "bg-emerald-600 text-white" },
+	{ id: "perdu", label: "Perdu", color: "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20", activeColor: "bg-red-600 text-white" },
 ];
 
 const SOURCE_COLORS: Record<string, string> = {
-	instagram: "bg-pink-100 text-pink-700",
-	facebook: "bg-blue-100 text-blue-700",
-	tiktok: "bg-slate-100 text-slate-700",
-	google: "bg-green-100 text-green-700",
-	referral: "bg-amber-100 text-amber-700",
-	organique: "bg-emerald-100 text-emerald-700",
+	instagram: "bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-500/20",
+	facebook: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20",
+	tiktok: "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+	google: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/20",
+	referral: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
+	organique: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
 };
 
 const QUAL_COLORS: Record<string, string> = {
-	qualifie: "bg-emerald-100 text-emerald-700",
-	non_qualifie: "bg-red-100 text-red-700",
-	pending: "bg-amber-100 text-amber-700",
+	qualifie: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
+	non_qualifie: "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20",
+	pending: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
 };
 
 const TYPE_COLORS: Record<string, string> = {
-	prospect: "bg-blue-100 text-blue-700",
-	client: "bg-emerald-100 text-emerald-700",
-	ancien_client: "bg-slate-100 text-slate-700",
+	prospect: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20",
+	client: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
+	ancien_client: "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
 };
 
 function formatDateTime(ts: number): string {
@@ -104,12 +124,11 @@ export default function LeadDetailPage() {
 	const userMap = useMemo(() => {
 		const m: Record<string, string> = {};
 		for (const u of team ?? []) {
-			m[u._id] = u.name ?? u.email ?? "—";
+			m[u._id] = u.name ?? u.email ?? "--";
 		}
 		return m;
 	}, [team]);
 
-	// Parse history from noteInterne
 	const history = useMemo(() => {
 		if (!lead?.noteInterne) return [];
 		try {
@@ -128,22 +147,25 @@ export default function LeadDetailPage() {
 	if (lead === undefined) {
 		return (
 			<div className="flex h-64 items-center justify-center">
-				<div className="h-8 w-8 animate-spin rounded-full border-4 border-[#D0003C] border-t-transparent" />
+				<Loader2 className="h-8 w-8 animate-spin text-primary" />
 			</div>
 		);
 	}
 
 	if (lead === null) {
 		return (
-			<div className="flex flex-col items-center justify-center py-16">
-				<p className="text-base font-medium text-slate-500">Lead introuvable</p>
-				<button
-					type="button"
+			<div className="flex flex-col items-center justify-center py-20">
+				<div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 mb-4">
+					<User size={28} className="text-muted-foreground/40" />
+				</div>
+				<p className="text-base font-medium text-foreground">Lead introuvable</p>
+				<Button
+					variant="link"
 					onClick={() => router.push("/sales/crm")}
-					className="mt-4 text-sm text-[#D0003C] hover:underline"
+					className="mt-3 text-primary"
 				>
 					Retour au CRM
-				</button>
+				</Button>
 			</div>
 		);
 	}
@@ -173,44 +195,33 @@ export default function LeadDetailPage() {
 	const currentEtape = ETAPES.find((e) => e.id === lead.etapeClosing);
 
 	return (
-		<div className="mx-auto max-w-6xl space-y-6">
+		<div className="mx-auto max-w-6xl animate-fade-in">
 			{/* Header */}
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex items-center gap-3">
+			<div className="mb-6">
+				<div className="flex items-center gap-3 mb-3">
 					<button
-						type="button"
 						onClick={() => router.push("/sales/crm")}
-						className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+						className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 					>
-						<ArrowLeft size={20} />
+						<ArrowLeft size={18} />
 					</button>
 					<div>
-						<h1 className="text-2xl font-bold text-slate-900">{lead.name}</h1>
-						<p className="text-sm text-slate-500">
+						<h1 className="text-2xl font-bold tracking-tight text-foreground">{lead.name}</h1>
+						<p className="text-sm text-muted-foreground">
 							Cree le {formatDateTime(lead.createdAt)}
 						</p>
 					</div>
 				</div>
-
-				<div className="flex items-center gap-2">
-					{/* Etape dropdown */}
-					<div className="relative">
-						<select
-							value={lead.etapeClosing}
-							onChange={(e) => updateEtape({ id, etape: e.target.value })}
-							className={`appearance-none rounded-lg border-0 py-2 pr-8 pl-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#D0003C] ${currentEtape?.color ?? "bg-slate-100 text-slate-700"}`}
-						>
-							{ETAPES.map((e) => (
-								<option key={e.id} value={e.id}>
-									{e.label}
-								</option>
-							))}
-						</select>
-						<ChevronDown
-							size={14}
-							className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2"
-						/>
-					</div>
+				<div className="flex flex-wrap items-center gap-2">
+					<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${SOURCE_COLORS[lead.source.toLowerCase()] ?? "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20"}`}>
+						{lead.source}
+					</span>
+					<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${TYPE_COLORS[lead.type] ?? "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20"}`}>
+						{lead.type}
+					</span>
+					<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${QUAL_COLORS[lead.qualification] ?? "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20"}`}>
+						{lead.qualification}
+					</span>
 				</div>
 			</div>
 
@@ -218,145 +229,81 @@ export default function LeadDetailPage() {
 				{/* Main content - 2 cols */}
 				<div className="space-y-6 lg:col-span-2">
 					{/* Contact Section */}
-					<Section title="Contact" icon={<User size={16} />}>
+					<div className="card-premium p-5">
+						<div className="flex items-center gap-2 mb-4">
+							<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+								<User size={14} className="text-primary" />
+							</div>
+							<h3 className="text-sm font-semibold text-foreground">Contact</h3>
+						</div>
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 							<EditableField
-								label="Nom"
-								icon={<User size={14} />}
-								value={lead.name}
-								field="name"
-								editingField={editingField}
-								editValue={editValue}
-								onStartEdit={startEdit}
-								onSave={saveEdit}
-								onCancel={cancelEdit}
-								onChange={setEditValue}
+								label="Nom" icon={<User size={14} />} value={lead.name} field="name"
+								editingField={editingField} editValue={editValue}
+								onStartEdit={startEdit} onSave={saveEdit} onCancel={cancelEdit} onChange={setEditValue}
 							/>
 							<EditableField
-								label="Email"
-								icon={<Mail size={14} />}
-								value={lead.email ?? ""}
-								field="email"
-								editingField={editingField}
-								editValue={editValue}
-								onStartEdit={startEdit}
-								onSave={saveEdit}
-								onCancel={cancelEdit}
-								onChange={setEditValue}
+								label="Email" icon={<Mail size={14} />} value={lead.email ?? ""} field="email"
+								editingField={editingField} editValue={editValue}
+								onStartEdit={startEdit} onSave={saveEdit} onCancel={cancelEdit} onChange={setEditValue}
 							/>
 							<EditableField
-								label="Telephone"
-								icon={<Phone size={14} />}
-								value={lead.phone ?? ""}
-								field="phone"
-								editingField={editingField}
-								editValue={editValue}
-								onStartEdit={startEdit}
-								onSave={saveEdit}
-								onCancel={cancelEdit}
-								onChange={setEditValue}
+								label="Telephone" icon={<Phone size={14} />} value={lead.phone ?? ""} field="phone"
+								editingField={editingField} editValue={editValue}
+								onStartEdit={startEdit} onSave={saveEdit} onCancel={cancelEdit} onChange={setEditValue}
 							/>
 							<EditableField
-								label="Instagram"
-								icon={<Instagram size={14} />}
-								value={lead.instagram ?? ""}
-								field="instagram"
-								editingField={editingField}
-								editValue={editValue}
-								onStartEdit={startEdit}
-								onSave={saveEdit}
-								onCancel={cancelEdit}
-								onChange={setEditValue}
+								label="Instagram" icon={<Instagram size={14} />} value={lead.instagram ?? ""} field="instagram"
+								editingField={editingField} editValue={editValue}
+								onStartEdit={startEdit} onSave={saveEdit} onCancel={cancelEdit} onChange={setEditValue}
 							/>
 							<div className="sm:col-span-2">
 								<EditableField
-									label="Adresse"
-									icon={<MapPin size={14} />}
-									value={lead.address ?? ""}
-									field="address"
-									editingField={editingField}
-									editValue={editValue}
-									onStartEdit={startEdit}
-									onSave={saveEdit}
-									onCancel={cancelEdit}
-									onChange={setEditValue}
+									label="Adresse" icon={<MapPin size={14} />} value={lead.address ?? ""} field="address"
+									editingField={editingField} editValue={editValue}
+									onStartEdit={startEdit} onSave={saveEdit} onCancel={cancelEdit} onChange={setEditValue}
 								/>
 							</div>
 						</div>
-					</Section>
-
-					{/* Qualification Section */}
-					<Section title="Qualification" icon={<FileText size={16} />}>
-						<div className="flex flex-wrap gap-3">
-							<div>
-								<p className="mb-1 text-xs font-medium text-slate-500">Source</p>
-								<span
-									className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${SOURCE_COLORS[lead.source.toLowerCase()] ?? "bg-gray-100 text-gray-600"}`}
-								>
-									{lead.source}
-								</span>
-							</div>
-							<div>
-								<p className="mb-1 text-xs font-medium text-slate-500">Type</p>
-								<span
-									className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${TYPE_COLORS[lead.type] ?? "bg-gray-100 text-gray-600"}`}
-								>
-									{lead.type}
-								</span>
-							</div>
-							<div>
-								<p className="mb-1 text-xs font-medium text-slate-500">Qualification</p>
-								<span
-									className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${QUAL_COLORS[lead.qualification] ?? "bg-gray-100 text-gray-600"}`}
-								>
-									{lead.qualification}
-								</span>
-							</div>
-						</div>
-
-						{/* Questionnaire Answers */}
-						{lead.questionnaireAnswers && (
-							<div className="mt-4">
-								<p className="mb-2 text-xs font-medium text-slate-500">
-									Reponses questionnaire
-								</p>
-								<QuestionnaireAccordion data={lead.questionnaireAnswers} />
-							</div>
-						)}
-					</Section>
+					</div>
 
 					{/* Appel de vente Section */}
-					<Section title="Appel de vente" icon={<Phone size={16} />}>
+					<div className="card-premium p-5">
+						<div className="flex items-center gap-2 mb-4">
+							<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+								<Phone size={14} className="text-primary" />
+							</div>
+							<h3 className="text-sm font-semibold text-foreground">Appel de vente</h3>
+						</div>
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 							<InfoField
 								label="Date booking"
-								value={lead.dateBookingCall ? formatDateTime(lead.dateBookingCall) : "—"}
+								value={lead.dateBookingCall ? formatDateTime(lead.dateBookingCall) : "--"}
 								icon={<Calendar size={14} />}
 							/>
 							<InfoField
 								label="Date appel"
-								value={lead.dateAppelVente ? formatDateTime(lead.dateAppelVente) : "—"}
+								value={lead.dateAppelVente ? formatDateTime(lead.dateAppelVente) : "--"}
 								icon={<Calendar size={14} />}
 							/>
 							<InfoField
 								label="Meeting URL"
-								value={lead.meetingUrl ?? "—"}
+								value={lead.meetingUrl ?? "--"}
 								icon={<ExternalLink size={14} />}
 								isLink={!!lead.meetingUrl}
 							/>
 							<InfoField
 								label="Video call"
-								value={lead.videoCallUrl ?? "—"}
+								value={lead.videoCallUrl ?? "--"}
 								icon={<Video size={14} />}
 								isLink={!!lead.videoCallUrl}
 							/>
 						</div>
 
-						{/* Loom embed */}
 						{lead.videoCallUrl && lead.videoCallUrl.includes("loom.com") && (
-							<div className="mt-4">
-								<p className="mb-2 text-xs font-medium text-slate-500">Video Loom</p>
-								<div className="aspect-video overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+							<div className="mt-5">
+								<p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Video Loom</p>
+								<div className="aspect-video overflow-hidden rounded-xl border border-border/50 bg-muted">
 									<iframe
 										src={lead.videoCallUrl.replace("/share/", "/embed/")}
 										className="h-full w-full"
@@ -367,298 +314,223 @@ export default function LeadDetailPage() {
 							</div>
 						)}
 
-						{/* Transcript */}
 						{lead.transcriptCall && (
-							<div className="mt-4">
-								<p className="mb-2 text-xs font-medium text-slate-500">Transcript</p>
-								<div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+							<div className="mt-5">
+								<p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Transcript</p>
+								<div className="max-h-48 overflow-y-auto rounded-xl border border-border/50 bg-muted/30 p-4 text-sm text-muted-foreground leading-relaxed">
 									{lead.transcriptCall}
 								</div>
 							</div>
 						)}
 
-						{/* Notes internes (editable) */}
-						<div className="mt-4">
-							<p className="mb-2 text-xs font-medium text-slate-500">Notes internes</p>
+						<div className="mt-5">
+							<p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Notes internes</p>
 							<NoteEditor
 								leadId={id}
 								currentNote={lead.noteInterne ?? ""}
 								onSave={updateLead}
 							/>
 						</div>
-					</Section>
+					</div>
 
-					{/* Commercial Section */}
-					<Section title="Commercial" icon={<Users size={16} />}>
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-							<div>
-								<p className="mb-1 text-xs font-medium text-slate-500">Setter</p>
-								<div className="relative">
-									<select
-										value={lead.setterId ?? ""}
-										onChange={(e) => {
-											if (e.target.value) {
-												assignSetter({
-													id,
-													setterId: e.target.value as Id<"users">,
-												});
-											}
-										}}
-										className="w-full appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-3 text-sm focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
-									>
-										<option value="">Non assigne</option>
-										{salesTeam.map((u) => (
-											<option key={u._id} value={u._id}>
-												{u.name ?? u.email}
-											</option>
-										))}
-									</select>
-									<ChevronDown
-										size={14}
-										className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400"
-									/>
+					{/* Questionnaire Section */}
+					{lead.questionnaireAnswers && (
+						<div className="card-premium p-5">
+							<div className="flex items-center gap-2 mb-4">
+								<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+									<FileText size={14} className="text-primary" />
 								</div>
+								<h3 className="text-sm font-semibold text-foreground">Questionnaire</h3>
 							</div>
-							<div>
-								<p className="mb-1 text-xs font-medium text-slate-500">Closer</p>
-								<div className="relative">
-									<select
-										value={lead.closerId ?? ""}
-										onChange={(e) => {
-											if (e.target.value) {
-												assignCloser({
-													id,
-													closerId: e.target.value as Id<"users">,
-												});
-											}
-										}}
-										className="w-full appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-3 text-sm focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
-									>
-										<option value="">Non assigne</option>
-										{salesTeam.map((u) => (
-											<option key={u._id} value={u._id}>
-												{u.name ?? u.email}
-											</option>
-										))}
-									</select>
-									<ChevronDown
-										size={14}
-										className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400"
-									/>
-								</div>
-							</div>
-							<InfoField
-								label="Montant contracte"
-								value={
-									lead.montantContracte ? formatEUR(lead.montantContracte) : "—"
-								}
-								icon={<LinkIcon size={14} />}
-							/>
+							<QuestionnaireAccordion data={lead.questionnaireAnswers} />
 						</div>
-					</Section>
-
-					{/* History Section */}
-					<Section title="Historique" icon={<History size={16} />}>
-						{history.length === 0 ? (
-							<p className="text-sm text-slate-400">Aucun changement d'etape enregistre</p>
-						) : (
-							<div className="space-y-3">
-								{history.map((entry: any, i: number) => {
-									const fromLabel =
-										ETAPES.find((e) => e.id === entry.from)?.label ?? entry.from;
-									const toLabel =
-										ETAPES.find((e) => e.id === entry.to)?.label ?? entry.to;
-									const toColor =
-										ETAPES.find((e) => e.id === entry.to)?.color ?? "bg-slate-100 text-slate-700";
-									const userName = entry.userId ? (userMap[entry.userId] ?? "Systeme") : "Systeme";
-
-									return (
-										<div key={`${entry.timestamp}-${i}`} className="flex gap-3">
-											<div className="flex flex-col items-center">
-												<div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100">
-													<Clock size={12} className="text-slate-500" />
-												</div>
-												{i < history.length - 1 && (
-													<div className="mt-1 w-px flex-1 bg-slate-200" />
-												)}
-											</div>
-											<div className="min-w-0 flex-1 pb-3">
-												<p className="text-sm text-slate-700">
-													<span className="font-medium">{userName}</span> a change l'etape
-												</p>
-												<div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-													<span className="text-slate-500">{fromLabel}</span>
-													<span className="text-slate-400">→</span>
-													<span
-														className={`inline-flex rounded-full px-2 py-0.5 font-medium ${toColor}`}
-													>
-														{toLabel}
-													</span>
-												</div>
-												<p className="mt-0.5 text-[11px] text-slate-400">
-													{formatDateTime(entry.timestamp)}
-												</p>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						)}
-					</Section>
+					)}
 				</div>
 
-				{/* Sidebar - Actions */}
-				<div className="space-y-4">
-					<div className="sticky top-4 space-y-4">
-						{/* Quick Info */}
-						<div className="rounded-xl border border-slate-200 bg-white p-5">
-							<h3 className="mb-3 text-sm font-semibold text-slate-900">Informations</h3>
-							<div className="space-y-2.5">
-								<div className="flex items-center justify-between text-sm">
-									<span className="text-slate-500">Etape</span>
-									<span
-										className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${currentEtape?.color ?? "bg-slate-100 text-slate-700"}`}
+				{/* Sidebar */}
+				<div className="space-y-5">
+					<div className="sticky top-4 space-y-5">
+						{/* Actions rapides */}
+						<div className="card-premium p-4">
+							<div className="flex items-center gap-2 mb-3">
+								<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+									<Zap size={12} className="text-primary" />
+								</div>
+								<h3 className="text-sm font-semibold text-foreground">Actions rapides</h3>
+							</div>
+							<div className="grid grid-cols-2 gap-1.5">
+								{ETAPES.map((e) => (
+									<button
+										key={e.id}
+										type="button"
+										onClick={() => updateEtape({ id, etape: e.id })}
+										className={`rounded-lg px-3 py-2 text-[11px] font-medium transition-all ${
+											lead.etapeClosing === e.id
+												? `${e.activeColor} shadow-sm`
+												: `bg-muted/50 hover:bg-muted text-foreground`
+										}`}
 									>
-										{currentEtape?.label ?? lead.etapeClosing}
-									</span>
+										{e.label}
+									</button>
+								))}
+							</div>
+						</div>
+
+						{/* Commercial */}
+						<div className="card-premium p-4">
+							<div className="flex items-center gap-2 mb-3">
+								<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+									<Users size={12} className="text-primary" />
 								</div>
-								<div className="flex items-center justify-between text-sm">
-									<span className="text-slate-500">Source</span>
-									<span
-										className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${SOURCE_COLORS[lead.source.toLowerCase()] ?? "bg-gray-100 text-gray-600"}`}
+								<h3 className="text-sm font-semibold text-foreground">Commercial</h3>
+							</div>
+							<div className="space-y-3">
+								<div>
+									<p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">Setter</p>
+									<Select
+										value={lead.setterId ?? "none"}
+										onValueChange={(v) => {
+											if (v !== "none") {
+												assignSetter({ id, setterId: v as Id<"users"> });
+											}
+										}}
 									>
-										{lead.source}
-									</span>
+										<SelectTrigger className="rounded-lg h-9 text-sm">
+											<SelectValue placeholder="Non assigne" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="none">Non assigne</SelectItem>
+											{salesTeam.map((u) => (
+												<SelectItem key={u._id} value={u._id}>
+													{u.name ?? u.email}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 								</div>
-								<div className="flex items-center justify-between text-sm">
-									<span className="text-slate-500">Setter</span>
-									<span className="text-slate-700">
-										{lead.setterId ? (userMap[lead.setterId] ?? "—") : "—"}
-									</span>
+								<div>
+									<p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">Closer</p>
+									<Select
+										value={lead.closerId ?? "none"}
+										onValueChange={(v) => {
+											if (v !== "none") {
+												assignCloser({ id, closerId: v as Id<"users"> });
+											}
+										}}
+									>
+										<SelectTrigger className="rounded-lg h-9 text-sm">
+											<SelectValue placeholder="Non assigne" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="none">Non assigne</SelectItem>
+											{salesTeam.map((u) => (
+												<SelectItem key={u._id} value={u._id}>
+													{u.name ?? u.email}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
 								</div>
-								<div className="flex items-center justify-between text-sm">
-									<span className="text-slate-500">Closer</span>
-									<span className="text-slate-700">
-										{lead.closerId ? (userMap[lead.closerId] ?? "—") : "—"}
-									</span>
-								</div>
-								{lead.montantContracte !== undefined && lead.montantContracte > 0 && (
-									<div className="flex items-center justify-between text-sm">
-										<span className="text-slate-500">Montant</span>
-										<span className="font-semibold text-emerald-600">
-											{formatEUR(lead.montantContracte)}
+								<div>
+									<p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">Montant contracte</p>
+									<div className="flex items-center gap-2 rounded-lg bg-muted/30 px-3 py-2">
+										<DollarSign size={14} className="text-muted-foreground" />
+										<span className={`text-sm ${lead.montantContracte ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+											{lead.montantContracte ? formatEUR(lead.montantContracte) : "--"}
 										</span>
 									</div>
-								)}
-							</div>
-						</div>
-
-						{/* Actions */}
-						<div className="rounded-xl border border-slate-200 bg-white p-5">
-							<h3 className="mb-3 text-sm font-semibold text-slate-900">Actions</h3>
-							<div className="space-y-2">
-								<ActionButton
-									icon={<Send size={14} />}
-									label="Envoyer lien paiement"
-									onClick={() => {
-										// TODO: Integrate with payment system
-									}}
-								/>
-								<ActionButton
-									icon={<Play size={14} />}
-									label="Lancer onboarding"
-									onClick={() => {
-										// TODO: Integrate with onboarding system
-									}}
-								/>
-
-								<div className="my-3 border-t border-slate-100" />
-
-								{/* Etape quick switch */}
-								<p className="mb-1.5 text-xs font-medium text-slate-500">
-									Changer etape
-								</p>
-								<div className="flex flex-wrap gap-1.5">
-									{ETAPES.map((e) => (
-										<button
-											key={e.id}
-											type="button"
-											onClick={() => updateEtape({ id, etape: e.id })}
-											className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-opacity ${
-												lead.etapeClosing === e.id
-													? `${e.color} ring-2 ring-offset-1 ring-[#D0003C]`
-													: `${e.color} opacity-60 hover:opacity-100`
-											}`}
-										>
-											{e.label}
-										</button>
-									))}
 								</div>
-
-								<div className="my-3 border-t border-slate-100" />
-
-								{/* Delete */}
-								{!showDeleteConfirm ? (
-									<button
-										type="button"
-										onClick={() => setShowDeleteConfirm(true)}
-										className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
-									>
-										<Trash2 size={14} />
-										Supprimer le lead
-									</button>
-								) : (
-									<div className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3">
-										<p className="text-sm font-medium text-red-700">
-											Confirmer la suppression ?
-										</p>
-										<div className="flex gap-2">
-											<button
-												type="button"
-												onClick={handleDelete}
-												className="flex-1 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-											>
-												Supprimer
-											</button>
-											<button
-												type="button"
-												onClick={() => setShowDeleteConfirm(false)}
-												className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-											>
-												Annuler
-											</button>
-										</div>
-									</div>
-								)}
 							</div>
 						</div>
+
+						{/* Historique */}
+						<div className="card-premium p-4">
+							<div className="flex items-center gap-2 mb-3">
+								<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+									<History size={12} className="text-primary" />
+								</div>
+								<h3 className="text-sm font-semibold text-foreground">Historique</h3>
+							</div>
+							{history.length === 0 ? (
+								<p className="text-xs text-muted-foreground">Aucun changement d'etape enregistre</p>
+							) : (
+								<div className="relative ml-1">
+									{history.map((entry: any, i: number) => {
+										const fromLabel = ETAPES.find((e) => e.id === entry.from)?.label ?? entry.from;
+										const toLabel = ETAPES.find((e) => e.id === entry.to)?.label ?? entry.to;
+										const userName = entry.userId ? (userMap[entry.userId] ?? "Systeme") : "Systeme";
+
+										return (
+											<div key={`${entry.timestamp}-${i}`} className="relative flex gap-3 pb-4 last:pb-0">
+												{/* Timeline line */}
+												{i < history.length - 1 && (
+													<div className="absolute left-[3px] top-4 h-[calc(100%-8px)] w-px bg-border" />
+												)}
+												{/* Timeline dot */}
+												<div className="relative z-10 mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+												<div className="min-w-0 flex-1">
+													<p className="text-xs text-foreground">
+														<span className="font-medium">{userName}</span>
+													</p>
+													<div className="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+														<span>{fromLabel}</span>
+														<span>-&gt;</span>
+														<span className="font-medium text-foreground">{toLabel}</span>
+													</div>
+													<p className="mt-0.5 text-[10px] text-muted-foreground">
+														{formatDateTime(entry.timestamp)}
+													</p>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</div>
+
+						{/* Quick actions */}
+						<div className="card-premium p-4 space-y-2">
+							<Button variant="outline" className="w-full justify-start rounded-lg h-9 text-sm" onClick={() => {}}>
+								<Send size={14} className="mr-2" />
+								Envoyer lien paiement
+							</Button>
+							<Button variant="outline" className="w-full justify-start rounded-lg h-9 text-sm" onClick={() => {}}>
+								<Play size={14} className="mr-2" />
+								Lancer onboarding
+							</Button>
+						</div>
+
+						{/* Delete */}
+						<button
+							onClick={() => setShowDeleteConfirm(true)}
+							className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium text-destructive transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+						>
+							<Trash2 size={14} />
+							Supprimer le lead
+						</button>
 					</div>
 				</div>
 			</div>
-		</div>
-	);
-}
 
-// ============================================================
-// Sub-components
-// ============================================================
-
-function Section({
-	title,
-	icon,
-	children,
-}: {
-	title: string;
-	icon: React.ReactNode;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="rounded-xl border border-slate-200 bg-white p-5">
-			<h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-				{icon}
-				{title}
-			</h2>
-			{children}
+			{/* Delete Confirmation Dialog */}
+			<Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Confirmer la suppression</DialogTitle>
+						<DialogDescription>
+							Cette action est irreversible. Le lead sera supprime definitivement.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+							Annuler
+						</Button>
+						<Button variant="destructive" onClick={handleDelete}>
+							Supprimer
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
@@ -690,10 +562,10 @@ function EditableField({
 
 	return (
 		<div>
-			<p className="mb-1 text-xs font-medium text-slate-500">{label}</p>
+			<p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
 			{isEditing ? (
 				<div className="flex items-center gap-1.5">
-					<input
+					<Input
 						type="text"
 						value={editValue}
 						onChange={(e) => onChange(e.target.value)}
@@ -701,27 +573,19 @@ function EditableField({
 							if (e.key === "Enter") onSave();
 							if (e.key === "Escape") onCancel();
 						}}
-						className="flex-1 rounded-lg border border-[#D0003C] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
+						className="flex-1 rounded-lg h-9"
 						autoFocus
 					/>
-					<button
-						type="button"
-						onClick={onSave}
-						className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50"
-					>
+					<Button variant="ghost" size="sm" onClick={onSave} className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10">
 						<Check size={14} />
-					</button>
-					<button
-						type="button"
-						onClick={onCancel}
-						className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
-					>
+					</Button>
+					<Button variant="ghost" size="sm" onClick={onCancel} className="h-8 w-8 p-0">
 						<X size={14} />
-					</button>
+					</Button>
 				</div>
 			) : (
 				<div
-					className="group flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+					className="group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted/50"
 					onClick={() => onStartEdit(field, value)}
 					onKeyDown={(e) => {
 						if (e.key === "Enter") onStartEdit(field, value);
@@ -729,11 +593,11 @@ function EditableField({
 					role="button"
 					tabIndex={0}
 				>
-					<span className="text-slate-400">{icon}</span>
-					<span className={value ? "" : "text-slate-400"}>{value || "—"}</span>
+					<span className="text-muted-foreground">{icon}</span>
+					<span className={value ? "" : "text-muted-foreground"}>{value || "--"}</span>
 					<Edit3
 						size={12}
-						className="ml-auto text-slate-300 opacity-0 transition-opacity group-hover:opacity-100"
+						className="ml-auto text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100"
 					/>
 				</div>
 			)}
@@ -754,44 +618,23 @@ function InfoField({
 }) {
 	return (
 		<div>
-			<p className="mb-1 text-xs font-medium text-slate-500">{label}</p>
-			<div className="flex items-center gap-2 px-2.5 py-1.5 text-sm text-slate-700">
-				<span className="text-slate-400">{icon}</span>
-				{isLink && value !== "—" ? (
+			<p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+			<div className="flex items-center gap-2 px-3 py-2 text-sm text-foreground">
+				<span className="text-muted-foreground">{icon}</span>
+				{isLink && value !== "--" ? (
 					<a
 						href={value}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="truncate text-[#D0003C] underline-offset-2 hover:underline"
+						className="truncate text-primary underline-offset-2 hover:underline"
 					>
 						{value}
 					</a>
 				) : (
-					<span className={value === "—" ? "text-slate-400" : ""}>{value}</span>
+					<span className={value === "--" ? "text-muted-foreground" : ""}>{value}</span>
 				)}
 			</div>
 		</div>
-	);
-}
-
-function ActionButton({
-	icon,
-	label,
-	onClick,
-}: {
-	icon: React.ReactNode;
-	label: string;
-	onClick: () => void;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className="inline-flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-		>
-			{icon}
-			{label}
-		</button>
 	);
 }
 
@@ -804,7 +647,6 @@ function NoteEditor({
 	currentNote: string;
 	onSave: (args: { id: Id<"leads">; noteInterne: string }) => Promise<unknown>;
 }) {
-	// Don't display JSON history as editable note
 	let displayNote = currentNote;
 	try {
 		const parsed = JSON.parse(currentNote);
@@ -826,7 +668,7 @@ function NoteEditor({
 	if (!isEditing) {
 		return (
 			<div
-				className="group min-h-[60px] cursor-pointer rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 transition-colors hover:border-slate-300"
+				className="group min-h-[60px] cursor-pointer rounded-xl border border-border/50 bg-muted/30 p-4 text-sm text-muted-foreground transition-colors hover:border-border"
 				onClick={() => {
 					setDraft(displayNote);
 					setIsEditing(true);
@@ -841,11 +683,11 @@ function NoteEditor({
 				tabIndex={0}
 			>
 				{displayNote || (
-					<span className="text-slate-400">Cliquez pour ajouter une note...</span>
+					<span className="text-muted-foreground/60">Cliquez pour ajouter une note...</span>
 				)}
 				<Edit3
 					size={12}
-					className="float-right text-slate-300 opacity-0 transition-opacity group-hover:opacity-100"
+					className="float-right text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100"
 				/>
 			</div>
 		);
@@ -857,24 +699,16 @@ function NoteEditor({
 				value={draft}
 				onChange={(e) => setDraft(e.target.value)}
 				rows={4}
-				className="w-full rounded-lg border border-[#D0003C] bg-white p-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
+				className="w-full rounded-xl border border-border/50 bg-card dark:bg-[#2A2A28] p-4 text-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/10"
 				autoFocus
 			/>
 			<div className="flex gap-2">
-				<button
-					type="button"
-					onClick={handleSave}
-					className="rounded-lg bg-[#D0003C] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#b00033]"
-				>
+				<Button size="sm" onClick={handleSave} className="rounded-lg">
 					Sauvegarder
-				</button>
-				<button
-					type="button"
-					onClick={() => setIsEditing(false)}
-					className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-				>
+				</Button>
+				<Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="rounded-lg">
 					Annuler
-				</button>
+				</Button>
 			</div>
 		</div>
 	);
@@ -891,31 +725,31 @@ function QuestionnaireAccordion({ data }: { data: string }) {
 	}
 
 	return (
-		<div className="rounded-lg border border-slate-200">
+		<div className="rounded-xl border border-border/50 overflow-hidden">
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				className="flex w-full items-center justify-between px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+				className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/30"
 			>
 				<span>Voir les reponses</span>
 				<ChevronDown
 					size={14}
-					className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+					className={`text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
 				/>
 			</button>
 			{isOpen && (
-				<div className="border-t border-slate-200 px-4 py-3">
+				<div className="border-t border-border/50 px-4 py-4">
 					{parsedAnswers ? (
-						<div className="space-y-2">
+						<div className="space-y-3">
 							{Object.entries(parsedAnswers).map(([question, answer]) => (
 								<div key={question}>
-									<p className="text-xs font-medium text-slate-500">{question}</p>
-									<p className="text-sm text-slate-700">{String(answer)}</p>
+									<p className="text-xs uppercase tracking-wider text-muted-foreground mb-0.5">{question}</p>
+									<p className="text-sm text-foreground">{String(answer)}</p>
 								</div>
 							))}
 						</div>
 					) : (
-						<p className="whitespace-pre-wrap text-sm text-slate-600">{data}</p>
+						<p className="whitespace-pre-wrap text-sm text-muted-foreground">{data}</p>
 					)}
 				</div>
 			)}

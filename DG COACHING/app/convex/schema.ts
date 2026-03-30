@@ -1,25 +1,22 @@
 import { defineSchema, defineTable } from "convex/server";
-import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-	...authTables,
-
 	// ============================================================
-	// USERS (extends auth)
+	// USERS — Auth custom (pas de Convex Auth)
 	// ============================================================
 	users: defineTable({
-		email: v.optional(v.string()),
+		email: v.string(),
 		name: v.optional(v.string()),
-		image: v.optional(v.string()),
-		emailVerificationTime: v.optional(v.number()),
-		phone: v.optional(v.string()),
-		isAnonymous: v.optional(v.boolean()),
-		// Custom fields
+		passwordHash: v.optional(v.string()),
+		passwordSalt: v.optional(v.string()),
 		role: v.optional(v.union(v.literal("admin"), v.literal("sales"), v.literal("coach"))),
-		status: v.optional(
-			v.union(v.literal("active"), v.literal("invited"), v.literal("disabled")),
-		),
+		status: v.optional(v.union(v.literal("active"), v.literal("invited"), v.literal("disabled"))),
+		mustChangePassword: v.optional(v.boolean()),
+		sessionToken: v.optional(v.string()),
+		sessionExpiry: v.optional(v.number()),
+		// Profil
+		phone: v.optional(v.string()),
 		bio: v.optional(v.string()),
 		specialty: v.optional(v.string()),
 		avatarStorageId: v.optional(v.id("_storage")),
@@ -30,13 +27,11 @@ export default defineSchema({
 		googleRefreshToken: v.optional(v.string()),
 		googleTokenExpiry: v.optional(v.number()),
 		googleCalendarId: v.optional(v.string()),
-		inviteToken: v.optional(v.string()),
-		inviteExpiry: v.optional(v.number()),
 	})
-		.index("email", ["email"])
+		.index("by_email", ["email"])
 		.index("by_role", ["role"])
 		.index("by_status", ["status"])
-		.index("by_inviteToken", ["inviteToken"]),
+		.index("by_sessionToken", ["sessionToken"]),
 
 	// ============================================================
 	// LEADS / CRM
@@ -51,11 +46,7 @@ export default defineSchema({
 		address: v.optional(v.string()),
 		source: v.string(),
 		type: v.union(v.literal("prospect"), v.literal("client"), v.literal("ancien_client")),
-		qualification: v.union(
-			v.literal("qualifie"),
-			v.literal("non_qualifie"),
-			v.literal("pending"),
-		),
+		qualification: v.union(v.literal("qualifie"), v.literal("non_qualifie"), v.literal("pending")),
 		etapeClosing: v.string(),
 		raisonPerte: v.optional(v.string()),
 		etapeSetting: v.optional(v.string()),
@@ -137,11 +128,7 @@ export default defineSchema({
 		type: v.union(v.literal("classique"), v.literal("renouvellement"), v.literal("acompte")),
 		amount: v.number(),
 		currency: v.string(),
-		paymentMode: v.union(
-			v.literal("unique"),
-			v.literal("mensuel"),
-			v.literal("fixe_plus_mensuel"),
-		),
+		paymentMode: v.union(v.literal("unique"), v.literal("mensuel"), v.literal("fixe_plus_mensuel")),
 		installmentCount: v.optional(v.number()),
 		firstPaymentAmount: v.optional(v.number()),
 		recurringAmount: v.optional(v.number()),
@@ -168,12 +155,7 @@ export default defineSchema({
 		leadId: v.optional(v.id("leads")),
 		provider: v.optional(v.string()),
 		providerTxId: v.optional(v.string()),
-		status: v.union(
-			v.literal("pending"),
-			v.literal("partial"),
-			v.literal("completed"),
-			v.literal("failed"),
-		),
+		status: v.union(v.literal("pending"), v.literal("partial"), v.literal("completed"), v.literal("failed")),
 		installmentCurrent: v.optional(v.number()),
 		installmentTotal: v.optional(v.number()),
 		createdAt: v.number(),
@@ -193,12 +175,7 @@ export default defineSchema({
 		provider: v.string(),
 		providerTxId: v.optional(v.string()),
 		providerPaymentId: v.optional(v.string()),
-		status: v.union(
-			v.literal("confirmed"),
-			v.literal("failed"),
-			v.literal("refunded"),
-			v.literal("pending"),
-		),
+		status: v.union(v.literal("confirmed"), v.literal("failed"), v.literal("refunded"), v.literal("pending")),
 		installmentNumber: v.optional(v.number()),
 		sourceType: v.optional(v.string()),
 		commissionClosing: v.optional(v.number()),
@@ -244,12 +221,7 @@ export default defineSchema({
 		startHour: v.number(),
 		endHour: v.number(),
 		timezone: v.string(),
-		hosts: v.array(
-			v.object({
-				userId: v.id("users"),
-				priority: v.union(v.literal("high"), v.literal("medium"), v.literal("low")),
-			}),
-		),
+		hosts: v.array(v.object({ userId: v.id("users"), priority: v.union(v.literal("high"), v.literal("medium"), v.literal("low")) })),
 		formId: v.optional(v.id("forms")),
 		confirmationEmailEnabled: v.boolean(),
 		reminderEnabled: v.boolean(),
@@ -275,12 +247,7 @@ export default defineSchema({
 		timezone: v.string(),
 		googleEventId: v.optional(v.string()),
 		googleMeetUrl: v.optional(v.string()),
-		status: v.union(
-			v.literal("confirmed"),
-			v.literal("cancelled"),
-			v.literal("no_show"),
-			v.literal("completed"),
-		),
+		status: v.union(v.literal("confirmed"), v.literal("cancelled"), v.literal("no_show"), v.literal("completed")),
 		formAnswers: v.optional(v.string()),
 		sourceTag: v.optional(v.string()),
 		calendarSlug: v.optional(v.string()),
@@ -299,12 +266,7 @@ export default defineSchema({
 	// ============================================================
 	forms: defineTable({
 		name: v.string(),
-		type: v.union(
-			v.literal("onboarding"),
-			v.literal("bilan"),
-			v.literal("booking"),
-			v.literal("custom"),
-		),
+		type: v.union(v.literal("onboarding"), v.literal("bilan"), v.literal("booking"), v.literal("custom")),
 		description: v.optional(v.string()),
 		active: v.boolean(),
 		createdAt: v.number(),
@@ -315,19 +277,7 @@ export default defineSchema({
 
 	formFields: defineTable({
 		formId: v.id("forms"),
-		type: v.union(
-			v.literal("shortText"),
-			v.literal("longText"),
-			v.literal("email"),
-			v.literal("phone"),
-			v.literal("number"),
-			v.literal("select"),
-			v.literal("multiSelect"),
-			v.literal("date"),
-			v.literal("rating"),
-			v.literal("fileUpload"),
-			v.literal("section"),
-		),
+		type: v.union(v.literal("shortText"), v.literal("longText"), v.literal("email"), v.literal("phone"), v.literal("number"), v.literal("select"), v.literal("multiSelect"), v.literal("date"), v.literal("rating"), v.literal("fileUpload"), v.literal("section")),
 		label: v.string(),
 		placeholder: v.optional(v.string()),
 		description: v.optional(v.string()),
@@ -350,9 +300,6 @@ export default defineSchema({
 		.index("by_clientId", ["clientId"])
 		.index("by_submittedAt", ["submittedAt"]),
 
-	// ============================================================
-	// BILANS
-	// ============================================================
 	bilans: defineTable({
 		clientId: v.id("clients"),
 		formSubmissionId: v.optional(v.id("formSubmissions")),
@@ -369,58 +316,6 @@ export default defineSchema({
 		.index("by_clientId", ["clientId"])
 		.index("by_type", ["type"]),
 
-	// ============================================================
-	// TRACKING COACH
-	// ============================================================
-	coachTracking: defineTable({
-		coachEvalueId: v.id("users"),
-		coachEvaluateurId: v.id("users"),
-		delaiReponse: v.number(),
-		relanceClients: v.number(),
-		positionProfessionnelle: v.number(),
-		qualiteDiete: v.number(),
-		qualiteProgramme: v.number(),
-		energie: v.number(),
-		moyenne: v.number(),
-		createdAt: v.number(),
-	})
-		.index("by_coachEvalueId", ["coachEvalueId"])
-		.index("by_createdAt", ["createdAt"]),
-
-	// ============================================================
-	// FINANCE
-	// ============================================================
-	expenses: defineTable({
-		name: v.string(),
-		amount: v.number(),
-		category: v.string(),
-		date: v.number(),
-		source: v.optional(v.string()),
-		notes: v.optional(v.string()),
-		createdAt: v.number(),
-	})
-		.index("by_category", ["category"])
-		.index("by_date", ["date"]),
-
-	invoices: defineTable({
-		type: v.union(v.literal("client"), v.literal("interne")),
-		clientId: v.optional(v.id("clients")),
-		teamMemberId: v.optional(v.id("users")),
-		number: v.optional(v.string()),
-		amount: v.number(),
-		status: v.union(v.literal("en_attente"), v.literal("paye"), v.literal("refuse")),
-		invoiceType: v.optional(v.string()),
-		fileStorageId: v.optional(v.id("_storage")),
-		dueDate: v.optional(v.number()),
-		createdAt: v.number(),
-	})
-		.index("by_type", ["type"])
-		.index("by_status", ["status"])
-		.index("by_clientId", ["clientId"]),
-
-	// ============================================================
-	// DISCOUNT CODES
-	// ============================================================
 	discountCodes: defineTable({
 		code: v.string(),
 		amount: v.number(),
@@ -432,97 +327,6 @@ export default defineSchema({
 		.index("by_code", ["code"])
 		.index("by_active", ["active"]),
 
-	// ============================================================
-	// META ADS
-	// ============================================================
-	metaAds: defineTable({
-		adId: v.string(),
-		adName: v.string(),
-		adSetName: v.optional(v.string()),
-		campaignName: v.optional(v.string()),
-		status: v.optional(v.string()),
-		format: v.optional(v.string()),
-		spend: v.optional(v.number()),
-		impressions: v.optional(v.number()),
-		clicks: v.optional(v.number()),
-		roas: v.optional(v.number()),
-		ctr: v.optional(v.number()),
-		cpa: v.optional(v.number()),
-		cpc: v.optional(v.number()),
-		cpm: v.optional(v.number()),
-		description: v.optional(v.string()),
-		thumbnailUrl: v.optional(v.string()),
-		videoUrl: v.optional(v.string()),
-		permalinkUrl: v.optional(v.string()),
-		adsLibraryUrl: v.optional(v.string()),
-		transcript: v.optional(v.string()),
-		lastSynced: v.optional(v.number()),
-		createdAt: v.number(),
-	})
-		.index("by_adId", ["adId"])
-		.index("by_campaignName", ["campaignName"])
-		.index("by_status", ["status"]),
-
-	// ============================================================
-	// RESOURCES & SOPS
-	// ============================================================
-	resources: defineTable({
-		title: v.string(),
-		category: v.union(
-			v.literal("sop"),
-			v.literal("asset_coaching"),
-			v.literal("asset_sales"),
-			v.literal("ressource"),
-		),
-		subCategory: v.optional(v.string()),
-		content: v.optional(v.string()),
-		url: v.optional(v.string()),
-		fileStorageIds: v.optional(v.array(v.id("_storage"))),
-		active: v.boolean(),
-		createdAt: v.number(),
-		updatedAt: v.number(),
-	})
-		.index("by_category", ["category"])
-		.index("by_active", ["active"]),
-
-	// ============================================================
-	// TASKS
-	// ============================================================
-	tasks: defineTable({
-		title: v.string(),
-		description: v.optional(v.string()),
-		status: v.union(
-			v.literal("a_faire"),
-			v.literal("en_cours"),
-			v.literal("retard"),
-			v.literal("termine"),
-			v.literal("en_attente"),
-		),
-		priority: v.union(
-			v.literal("urgent"),
-			v.literal("haute"),
-			v.literal("moyenne"),
-			v.literal("basse"),
-		),
-		assigneeId: v.optional(v.id("users")),
-		startDate: v.optional(v.number()),
-		deadline: v.optional(v.number()),
-		createdAt: v.number(),
-		updatedAt: v.number(),
-	})
-		.index("by_status", ["status"])
-		.index("by_assigneeId", ["assigneeId"]),
-
-	subTasks: defineTable({
-		taskId: v.id("tasks"),
-		title: v.string(),
-		completed: v.boolean(),
-		createdAt: v.number(),
-	}).index("by_taskId", ["taskId"]),
-
-	// ============================================================
-	// CONFIG
-	// ============================================================
 	config: defineTable({
 		key: v.string(),
 		value: v.string(),

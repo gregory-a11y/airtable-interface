@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+
 
 export const generatePID = mutation({
 	args: {
@@ -11,8 +11,6 @@ export const generatePID = mutation({
 		prospectPhone: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		const offer = await ctx.db.get(args.offerId);
 		if (!offer) throw new Error("Offre introuvable");
@@ -62,8 +60,6 @@ export const getByPIDPublic = query({
 export const listByLead = query({
 	args: { leadId: v.id("leads") },
 	handler: async (ctx, { leadId }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		return await ctx.db
 			.query("transactions")
 			.withIndex("by_leadId", (q) => q.eq("leadId", leadId))
@@ -74,8 +70,6 @@ export const listByLead = query({
 export const listByClient = query({
 	args: { clientId: v.id("clients") },
 	handler: async (ctx, { clientId }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		return await ctx.db
 			.query("transactions")
 			.withIndex("by_clientId", (q) => q.eq("clientId", clientId))

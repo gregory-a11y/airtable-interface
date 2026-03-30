@@ -3,182 +3,264 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { formatEUR, formatDate, cn } from "@/lib/utils";
-import { CreditCard, TrendingUp, Users, DollarSign, Loader2 } from "lucide-react";
+import {
+	CreditCard,
+	TrendingUp,
+	Users,
+	DollarSign,
+	Loader2,
+	Wallet,
+	AlertCircle,
+	ArrowUpRight,
+} from "lucide-react";
 import { useState } from "react";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
-const paymentStatusColors: Record<string, string> = {
-	confirmed: "bg-emerald-100 text-emerald-700",
-	pending: "bg-yellow-100 text-yellow-700",
-	failed: "bg-red-100 text-red-700",
-	refunded: "bg-cyan-100 text-cyan-700",
+const STATUS_STYLES: Record<string, string> = {
+	confirmed: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
+	pending: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
+	failed: "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20",
+	refunded: "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+	confirmed: "Confirme",
+	pending: "En attente",
+	failed: "Echoue",
+	refunded: "Rembourse",
 };
 
 export default function PaymentsPage() {
 	const payments = useQuery(api.payments.list, {});
 	const stats = useQuery(api.payments.getStats);
-	const [tab, setTab] = useState<"paiements" | "commissions">("paiements");
+	const commissions = useQuery(api.payments.getCommissionsByUser);
+	const [tab, setTab] = useState<string>("paiements");
 
 	if (payments === undefined || stats === undefined) {
 		return (
 			<div className="flex items-center justify-center py-20">
-				<Loader2 className="h-8 w-8 animate-spin text-[#D0003C]" />
+				<Loader2 className="h-8 w-8 animate-spin text-primary" />
 			</div>
 		);
 	}
 
-	return (
-		<div className="mx-auto max-w-7xl space-y-6">
-			<h1 className="text-xl font-bold text-slate-800">Suivi des paiements & commissions</h1>
+	const kpis = [
+		{
+			label: "Total Collecte",
+			value: formatEUR(stats.totalCollecte),
+			icon: <DollarSign size={18} />,
+			iconBg: "bg-emerald-50 dark:bg-emerald-500/10",
+			iconColor: "text-emerald-600 dark:text-emerald-400",
+		},
+		{
+			label: "Paiements echoues",
+			value: String(stats.totalFailed),
+			icon: <AlertCircle size={18} />,
+			iconBg: "bg-red-50 dark:bg-red-500/10",
+			iconColor: "text-red-600 dark:text-red-400",
+		},
+		{
+			label: "Commission Closing",
+			value: formatEUR(stats.totalCommissionsClosing),
+			icon: <TrendingUp size={18} />,
+			iconBg: "bg-blue-50 dark:bg-blue-500/10",
+			iconColor: "text-blue-600 dark:text-blue-400",
+		},
+		{
+			label: "Commission Setting",
+			value: formatEUR(stats.totalCommissionsSetting),
+			icon: <Users size={18} />,
+			iconBg: "bg-violet-50 dark:bg-violet-500/10",
+			iconColor: "text-violet-600 dark:text-violet-400",
+		},
+	];
 
-			{/* Stats */}
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-				<StatCard
-					label="Total Collecte"
-					value={formatEUR(stats.totalCollecte)}
-					icon={<DollarSign size={18} />}
-					color="emerald"
-				/>
-				<StatCard
-					label="Paiements echoues"
-					value={String(stats.totalFailed)}
-					icon={<CreditCard size={18} />}
-					color="red"
-				/>
-				<StatCard
-					label="Commission Closing"
-					value={formatEUR(stats.totalCommissionsClosing)}
-					icon={<TrendingUp size={18} />}
-					color="blue"
-				/>
-				<StatCard
-					label="Commission Setting"
-					value={formatEUR(stats.totalCommissionsSetting)}
-					icon={<Users size={18} />}
-					color="violet"
-				/>
+	return (
+		<div className="mx-auto max-w-7xl space-y-6 animate-fade-in">
+			{/* Header */}
+			<div>
+				<h1 className="text-2xl font-bold tracking-tight text-foreground">Suivi des Paiements</h1>
+				<p className="mt-0.5 text-sm text-muted-foreground">Paiements et commissions de l'equipe</p>
 			</div>
 
-			{/* Tabs */}
-			<div className="flex gap-1 rounded-lg bg-slate-100 p-1 w-fit">
+			{/* KPI Stats */}
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+				{kpis.map((kpi, index) => (
+					<div
+						key={kpi.label}
+						className="card-premium gradient-border p-5 animate-fade-in"
+						style={{ animationDelay: `${index * 80}ms` }}
+					>
+						<div className="flex items-center gap-3.5">
+							<div className={cn("flex h-11 w-11 items-center justify-center rounded-xl", kpi.iconBg)}>
+								<span className={kpi.iconColor}>{kpi.icon}</span>
+							</div>
+							<div>
+								<p className="text-xl font-bold text-foreground animate-number">{kpi.value}</p>
+								<p className="text-xs text-muted-foreground">{kpi.label}</p>
+							</div>
+						</div>
+					</div>
+				))}
+			</div>
+
+			{/* Tab switcher — pill style */}
+			<div className="inline-flex items-center rounded-full bg-muted p-1">
 				<button
-					type="button"
 					onClick={() => setTab("paiements")}
 					className={cn(
-						"rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
+						"flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all",
 						tab === "paiements"
-							? "bg-white text-slate-800 shadow-sm"
-							: "text-slate-500 hover:text-slate-700",
+							? "bg-white dark:bg-[#2A2A28] text-foreground shadow-sm dark:shadow-black/20"
+							: "text-muted-foreground hover:text-foreground"
 					)}
 				>
+					<Wallet size={15} />
 					Paiements
 				</button>
 				<button
-					type="button"
 					onClick={() => setTab("commissions")}
 					className={cn(
-						"rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
+						"flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all",
 						tab === "commissions"
-							? "bg-white text-slate-800 shadow-sm"
-							: "text-slate-500 hover:text-slate-700",
+							? "bg-white dark:bg-[#2A2A28] text-foreground shadow-sm dark:shadow-black/20"
+							: "text-muted-foreground hover:text-foreground"
 					)}
 				>
+					<ArrowUpRight size={15} />
 					Commissions
 				</button>
 			</div>
 
 			{/* Payments table */}
 			{tab === "paiements" && (
-				<div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+				<div className="card-premium overflow-hidden">
 					{payments.length === 0 ? (
-						<div className="py-16 text-center">
-							<CreditCard className="mx-auto h-12 w-12 text-slate-300" />
-							<p className="mt-3 text-sm text-slate-500">Aucun paiement enregistre</p>
+						<div className="flex flex-col items-center justify-center py-20">
+							<div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 mb-4">
+								<CreditCard size={28} className="text-muted-foreground/40" />
+							</div>
+							<p className="text-base font-medium text-foreground">Aucun paiement enregistre</p>
+							<p className="mt-1 text-sm text-muted-foreground">Les paiements apparaitront ici.</p>
 						</div>
 					) : (
 						<div className="overflow-x-auto">
-							<table className="w-full text-sm">
-								<thead className="bg-slate-50">
-									<tr className="text-left text-xs text-slate-500">
-										<th className="px-4 py-3 font-medium">Statut</th>
-										<th className="px-4 py-3 font-medium">Montant</th>
-										<th className="px-4 py-3 font-medium">Source</th>
-										<th className="px-4 py-3 font-medium">Echeance</th>
-										<th className="px-4 py-3 font-medium">Date</th>
-									</tr>
-								</thead>
-								<tbody className="divide-y divide-slate-100">
+							<Table>
+								<TableHeader>
+									<TableRow className="bg-muted/30 border-b border-border/30 hover:bg-muted/30">
+										<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Statut</TableHead>
+										<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Montant</TableHead>
+										<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Source</TableHead>
+										<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Echeance</TableHead>
+										<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
 									{payments.map((p) => (
-										<tr key={p._id} className="hover:bg-slate-50">
-											<td className="px-4 py-3">
-												<span
-													className={cn(
-														"rounded-full px-2 py-0.5 text-xs font-medium",
-														paymentStatusColors[p.status],
-													)}
-												>
-													{p.status}
+										<TableRow key={p._id} className="table-row-hover border-b border-border/30">
+											<TableCell className="py-3 px-4">
+												<span className={cn(
+													"inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium",
+													STATUS_STYLES[p.status] ?? "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20"
+												)}>
+													{STATUS_LABEL[p.status] ?? p.status}
 												</span>
-											</td>
-											<td className="px-4 py-3 font-medium text-slate-800">
+											</TableCell>
+											<TableCell className="py-3 px-4 font-semibold text-foreground">
 												{formatEUR(p.amount)}
-											</td>
-											<td className="px-4 py-3 text-slate-500">
+											</TableCell>
+											<TableCell className="py-3 px-4 text-sm text-muted-foreground">
 												{p.sourceType || p.provider}
-											</td>
-											<td className="px-4 py-3 text-slate-500">
-												{p.installmentNumber || "—"}
-											</td>
-											<td className="px-4 py-3 text-slate-500">
+											</TableCell>
+											<TableCell className="py-3 px-4 text-sm text-muted-foreground">
+												{p.installmentNumber || "--"}
+											</TableCell>
+											<TableCell className="py-3 px-4 text-xs text-muted-foreground">
 												{formatDate(p.createdAt)}
-											</td>
-										</tr>
+											</TableCell>
+										</TableRow>
 									))}
-								</tbody>
-							</table>
+								</TableBody>
+							</Table>
 						</div>
 					)}
 				</div>
 			)}
 
+			{/* Commissions */}
 			{tab === "commissions" && (
-				<div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-					<Users className="mx-auto h-12 w-12 text-slate-300" />
-					<p className="mt-3 text-sm text-slate-500">
-						Les commissions seront calculees automatiquement a chaque paiement recu.
-					</p>
+				<div>
+					{!commissions || commissions.length === 0 ? (
+						<div className="card-premium flex flex-col items-center justify-center py-20">
+							<div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 mb-4">
+								<Users size={28} className="text-muted-foreground/40" />
+							</div>
+							<p className="text-base font-medium text-foreground">Aucune commission enregistree</p>
+							<p className="mt-1 text-sm text-muted-foreground">Les commissions seront calculees automatiquement.</p>
+						</div>
+					) : (
+						<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+							{commissions
+								.sort((a, b) => b.total - a.total)
+								.map((c, index) => (
+								<div
+									key={c.userId}
+									className="card-premium p-5 animate-fade-in"
+									style={{ animationDelay: `${index * 70}ms` }}
+								>
+									{/* User header */}
+									<div className="flex items-center gap-3 mb-4">
+										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white">
+											{c.name?.charAt(0).toUpperCase() || "?"}
+										</div>
+										<div>
+											<h3 className="text-sm font-semibold text-foreground">{c.name}</h3>
+											<div className="flex items-center gap-1.5">
+												<span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+													{c.count} paiement{c.count > 1 ? "s" : ""}
+												</span>
+											</div>
+										</div>
+									</div>
+
+									{/* Commission breakdown */}
+									<div className="space-y-2.5">
+										{c.totalClosing > 0 && (
+											<div className="flex items-center justify-between">
+												<div className="flex items-center gap-2">
+													<div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+													<span className="text-xs text-muted-foreground">Closing</span>
+												</div>
+												<span className="text-sm font-medium text-foreground">{formatEUR(c.totalClosing)}</span>
+											</div>
+										)}
+										{c.totalSetting > 0 && (
+											<div className="flex items-center justify-between">
+												<div className="flex items-center gap-2">
+													<div className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+													<span className="text-xs text-muted-foreground">Setting</span>
+												</div>
+												<span className="text-sm font-medium text-foreground">{formatEUR(c.totalSetting)}</span>
+											</div>
+										)}
+										<div className="border-t border-border/30 pt-2.5 flex items-center justify-between">
+											<span className="text-xs font-medium text-muted-foreground">Total</span>
+											<span className="text-base font-bold text-primary">{formatEUR(c.total)}</span>
+										</div>
+									</div>
+								</div>
+							))}
+						</div>
+					)}
 				</div>
 			)}
-		</div>
-	);
-}
-
-function StatCard({
-	label,
-	value,
-	icon,
-	color,
-}: {
-	label: string;
-	value: string;
-	icon: React.ReactNode;
-	color: string;
-}) {
-	const colors: Record<string, string> = {
-		emerald: "bg-emerald-50 text-emerald-600",
-		red: "bg-red-50 text-red-600",
-		blue: "bg-blue-50 text-blue-600",
-		violet: "bg-violet-50 text-violet-600",
-	};
-
-	return (
-		<div className="rounded-xl border border-slate-200 bg-white p-4">
-			<div className="flex items-center gap-3">
-				<div className={`rounded-lg p-2 ${colors[color]}`}>{icon}</div>
-				<div>
-					<p className="text-lg font-bold text-slate-800">{value}</p>
-					<p className="text-xs text-slate-500">{label}</p>
-				</div>
-			</div>
 		</div>
 	);
 }

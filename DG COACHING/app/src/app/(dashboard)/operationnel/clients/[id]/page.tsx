@@ -8,17 +8,45 @@ import { formatEUR, formatDate, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
 import {
-	User,
-	Calendar,
-	Phone,
+	ArrowLeft,
+	ClipboardList,
 	Mail,
-	MapPin,
+	Phone,
 	FileText,
 	MessageCircle,
-	ExternalLink,
 	Loader2,
 	Trash2,
+	ExternalLink,
+	MapPin,
+	StickyNote,
+	CreditCard,
+	CircleDollarSign,
+	Settings,
+	Calendar,
+	Pause,
+	CheckCircle2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+	DialogClose,
+} from "@/components/ui/dialog";
+import Link from "next/link";
 
 const statusOptions = [
 	"acompte",
@@ -31,6 +59,30 @@ const statusOptions = [
 	"termine",
 	"archived",
 ];
+
+const statusLabels: Record<string, string> = {
+	acompte: "Acompte",
+	nouveau_client: "Nouveau client",
+	en_attente_programme: "En attente",
+	active: "Actif",
+	paused: "Pause",
+	renew: "Renouvellement",
+	fin_proche: "Fin proche",
+	termine: "Termine",
+	archived: "Archive",
+};
+
+const statusColors: Record<string, string> = {
+	acompte: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
+	nouveau_client: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20",
+	en_attente_programme: "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20",
+	active: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
+	paused: "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+	renew: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20",
+	fin_proche: "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20",
+	termine: "bg-slate-50 dark:bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-500/20",
+	archived: "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+};
 
 const prestationOptions = [
 	"1M_Oneshot",
@@ -45,21 +97,25 @@ const prestationOptions = [
 	"Acompte",
 ];
 
-const statusColors: Record<string, string> = {
-	acompte: "bg-orange-100 text-orange-700",
-	nouveau_client: "bg-yellow-100 text-yellow-700",
-	active: "bg-emerald-100 text-emerald-700",
-	paused: "bg-slate-100 text-slate-600",
-	fin_proche: "bg-red-100 text-red-700",
-	termine: "bg-slate-200 text-slate-600",
+const paymentStatusColors: Record<string, string> = {
+	confirmed: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
+	pending: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
+	failed: "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20",
+	refunded: "bg-slate-50 dark:bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-500/20",
 };
 
-const paymentStatusColors: Record<string, string> = {
-	confirmed: "bg-emerald-100 text-emerald-700",
-	pending: "bg-yellow-100 text-yellow-700",
-	failed: "bg-red-100 text-red-700",
-	refunded: "bg-cyan-100 text-cyan-700",
+const paymentStatusLabels: Record<string, string> = {
+	confirmed: "Confirme",
+	pending: "En attente",
+	failed: "Echoue",
+	refunded: "Rembourse",
 };
+
+const onboardingOptions = [
+	{ value: "en_attente", label: "En attente" },
+	{ value: "en_cours", label: "En cours" },
+	{ value: "termine", label: "Termine" },
+];
 
 export default function ClientDetailPage() {
 	const params = useParams();
@@ -68,26 +124,38 @@ export default function ClientDetailPage() {
 	const client = useQuery(api.clients.getById, { id: clientId });
 	const updateClient = useMutation(api.clients.update);
 	const removeClient = useMutation(api.clients.remove);
-
-	const [editing, setEditing] = useState<Record<string, string>>({});
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
 	if (client === undefined) {
 		return (
 			<div className="flex items-center justify-center py-20">
-				<Loader2 className="h-8 w-8 animate-spin text-[#D0003C]" />
+				<Loader2 className="h-8 w-8 animate-spin text-primary" />
 			</div>
 		);
 	}
 
 	if (!client) {
 		return (
-			<div className="py-20 text-center text-slate-500">Client introuvable</div>
+			<div className="flex flex-col items-center justify-center py-20">
+				<p className="text-sm text-muted-foreground">
+					Client introuvable
+				</p>
+				<Link
+					href="/operationnel/clients"
+					className="mt-4 text-sm text-primary hover:underline"
+				>
+					Retour a la liste
+				</Link>
+			</div>
 		);
 	}
 
 	const handleUpdate = async (field: string, value: unknown) => {
 		try {
-			await updateClient({ id: clientId, [field]: value } as any);
+			await updateClient({
+				id: clientId,
+				[field]: value,
+			} as Parameters<typeof updateClient>[0]);
 			toast.success("Mis a jour");
 		} catch {
 			toast.error("Erreur lors de la mise a jour");
@@ -95,7 +163,6 @@ export default function ClientDetailPage() {
 	};
 
 	const handleDelete = async () => {
-		if (!confirm("Supprimer ce client ? Cette action est irreversible.")) return;
 		try {
 			await removeClient({ id: clientId });
 			toast.success("Client supprime");
@@ -105,291 +172,478 @@ export default function ClientDetailPage() {
 		}
 	};
 
-	return (
-		<div className="mx-auto max-w-4xl space-y-6">
-			{/* Header */}
-			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold text-slate-800">{client.name}</h1>
-				<button
-					type="button"
-					onClick={handleDelete}
-					className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
-				>
-					<Trash2 size={14} />
-					Supprimer client
-				</button>
-			</div>
+	const collectedPercentage = Math.min(client.pourcentageAvancement, 100);
 
-			{/* Statut & Prestation */}
-			<div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<div>
-						<label className="mb-1.5 block text-xs font-medium text-slate-500">
-							Statut Client
-						</label>
-						<select
-							value={client.status}
-							onChange={(e) => handleUpdate("status", e.target.value)}
-							className={cn(
-								"w-full rounded-lg border px-3 py-2 text-sm font-medium",
-								statusColors[client.status] || "border-slate-300",
-							)}
-						>
-							{statusOptions.map((s) => (
-								<option key={s} value={s}>
-									{s.replace(/_/g, " ")}
-								</option>
-							))}
-						</select>
-					</div>
-					<div>
-						<label className="mb-1.5 block text-xs font-medium text-slate-500">
-							Prestation
-						</label>
-						<select
-							value={client.prestation}
-							onChange={(e) => handleUpdate("prestation", e.target.value)}
-							className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-						>
-							{prestationOptions.map((p) => (
-								<option key={p} value={p}>
-									{p}
-								</option>
-							))}
-						</select>
+	return (
+		<div className="mx-auto max-w-6xl animate-page-enter">
+			{/* Header */}
+			<div className="mb-8">
+				<div className="mb-4 flex items-center gap-3">
+					<Link
+						href="/operationnel/clients"
+						className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/50 dark:border-white/10 bg-card dark:bg-[#2A2A28] text-muted-foreground shadow-sm dark:shadow-black/20 transition-colors hover:text-foreground"
+					>
+						<ArrowLeft size={16} />
+					</Link>
+					<div className="flex-1">
+						<div className="flex items-center gap-3">
+							<h1 className="text-2xl font-bold tracking-tight text-foreground">
+								{client.name}
+							</h1>
+							<span
+								className={cn(
+									"inline-flex rounded-full px-3 py-1 text-xs font-medium",
+									statusColors[client.status] ||
+										"bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+								)}
+							>
+								{statusLabels[client.status] || client.status}
+							</span>
+							<span className="inline-flex rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+								{client.prestation}
+							</span>
+						</div>
+						{client.coach && (
+							<div className="mt-2 flex items-center gap-2">
+								<div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+									{client.coach.name?.charAt(0) || "C"}
+								</div>
+								<span className="text-sm text-muted-foreground">
+									{client.coach.name}
+								</span>
+							</div>
+						)}
 					</div>
 				</div>
+			</div>
 
-				{/* Coach */}
-				{client.coach && (
-					<div>
-						<label className="mb-1.5 block text-xs font-medium text-slate-500">
-							Coach attitré
-						</label>
-						<div className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
-							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm">
-								{client.coach.name?.charAt(0) || "C"}
+			{/* Two column layout */}
+			<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+				{/* Main content - 2/3 */}
+				<div className="space-y-6 lg:col-span-2">
+					{/* Coaching card */}
+					<div className="card-premium p-6">
+						<div className="mb-4 flex items-center gap-2">
+							<ClipboardList
+								size={18}
+								className="text-primary"
+							/>
+							<h2 className="text-base font-semibold text-foreground">
+								Coaching
+							</h2>
+						</div>
+
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+							<div>
+								<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+									<FileText size={13} />
+									Training LOG
+								</Label>
+								<div className="relative">
+									<Input
+										type="url"
+										defaultValue={
+											client.trainingLogUrl || ""
+										}
+										onBlur={(e) =>
+											handleUpdate(
+												"trainingLogUrl",
+												e.target.value,
+											)
+										}
+										placeholder="Lien Google Sheets"
+										className="h-9 rounded-lg pr-8"
+									/>
+									{client.trainingLogUrl && (
+										<a
+											href={client.trainingLogUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+										>
+											<ExternalLink size={14} />
+										</a>
+									)}
+								</div>
 							</div>
 							<div>
-								<div className="text-sm font-medium text-slate-800">
-									{client.coach.name}
+								<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+									<MessageCircle size={13} />
+									Groupe Telegram
+								</Label>
+								<Input
+									type="url"
+									defaultValue={
+										client.telegramGroupUrl || ""
+									}
+									onBlur={(e) =>
+										handleUpdate(
+											"telegramGroupUrl",
+											e.target.value,
+										)
+									}
+									placeholder="Lien Telegram"
+									className="h-9 rounded-lg"
+								/>
+							</div>
+						</div>
+
+						<div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+							<div>
+								<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+									<Calendar size={13} />
+									Date de debut
+								</Label>
+								<div className="text-sm font-medium text-foreground">
+									{client.dateDebut
+										? formatDate(client.dateDebut)
+										: "--"}
 								</div>
-								<div className="text-xs text-slate-400">
-									{client.coach.role} — {client.coach.bio || ""}
+							</div>
+							<div>
+								<Label className="mb-1.5 text-xs text-muted-foreground">
+									Date de fin calculee
+								</Label>
+								<div className="text-sm text-muted-foreground">
+									{client.dateFinCalculee
+										? formatDate(client.dateFinCalculee)
+										: "--"}
+								</div>
+							</div>
+							<div>
+								<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+									<Pause size={13} />
+									Jours de pause
+								</Label>
+								<Input
+									type="number"
+									defaultValue={client.nbJoursPause || 0}
+									onBlur={(e) =>
+										handleUpdate(
+											"nbJoursPause",
+											parseInt(e.target.value) || 0,
+										)
+									}
+									className="h-9 w-20 rounded-lg"
+								/>
+							</div>
+							<div>
+								<Label className="mb-1.5 text-xs text-muted-foreground">
+									Date fin reelle
+								</Label>
+								<div className="text-sm text-muted-foreground">
+									{client.dateFinReelle
+										? formatDate(client.dateFinReelle)
+										: "--"}
 								</div>
 							</div>
 						</div>
+
+						<div className="mt-4">
+							<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+								<CheckCircle2 size={13} />
+								Onboarding
+							</Label>
+							<Select
+								value={client.onboardingStatus || "en_attente"}
+								onValueChange={(v) =>
+									handleUpdate("onboardingStatus", v)
+								}
+							>
+								<SelectTrigger className="h-9 w-48 rounded-lg">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{onboardingOptions.map((opt) => (
+										<SelectItem
+											key={opt.value}
+											value={opt.value}
+										>
+											{opt.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
-				)}
-			</div>
 
-			{/* Coaching */}
-			<div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
-				<h2 className="text-sm font-semibold text-slate-700">Coaching</h2>
+					{/* Contact card */}
+					<div className="card-premium p-6">
+						<div className="mb-4 flex items-center gap-2">
+							<Mail size={18} className="text-primary" />
+							<h2 className="text-base font-semibold text-foreground">
+								Contact
+							</h2>
+						</div>
 
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Field label="Training LOG" icon={<FileText size={14} />}>
-						<input
-							type="url"
-							defaultValue={client.trainingLogUrl || ""}
-							onBlur={(e) => handleUpdate("trainingLogUrl", e.target.value)}
-							placeholder="Lien Google Sheets"
-							className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#D0003C]"
-						/>
-					</Field>
-					<Field label="Groupe Telegram" icon={<MessageCircle size={14} />}>
-						<input
-							type="url"
-							defaultValue={client.telegramGroupUrl || ""}
-							onBlur={(e) => handleUpdate("telegramGroupUrl", e.target.value)}
-							placeholder="Lien Telegram"
-							className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#D0003C]"
-						/>
-					</Field>
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+							<div>
+								<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+									<Mail size={13} />
+									Email
+								</Label>
+								<Input
+									type="email"
+									defaultValue={client.email || ""}
+									onBlur={(e) =>
+										handleUpdate("email", e.target.value)
+									}
+									className="h-9 rounded-lg"
+								/>
+							</div>
+							<div>
+								<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+									<Phone size={13} />
+									Telephone
+								</Label>
+								<Input
+									type="tel"
+									defaultValue={client.phone || ""}
+									onBlur={(e) =>
+										handleUpdate("phone", e.target.value)
+									}
+									className="h-9 rounded-lg"
+								/>
+							</div>
+						</div>
+
+						<div className="mt-4">
+							<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+								<MapPin size={13} />
+								Adresse
+							</Label>
+							<Input
+								type="text"
+								defaultValue={client.address || ""}
+								onBlur={(e) =>
+									handleUpdate("address", e.target.value)
+								}
+								placeholder="Adresse du client"
+								className="h-9 rounded-lg"
+							/>
+						</div>
+
+						<div className="mt-4">
+							<Label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+								<StickyNote size={13} />
+								Notes
+							</Label>
+							<textarea
+								defaultValue={client.notes || ""}
+								onBlur={(e) =>
+									handleUpdate("notes", e.target.value)
+								}
+								rows={3}
+								className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								placeholder="Notes internes..."
+							/>
+						</div>
+					</div>
 				</div>
 
-				<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-					<div>
-						<label className="mb-1 block text-xs text-slate-500">Date de debut</label>
-						<div className="text-sm font-medium text-slate-800">
-							{client.dateDebut ? formatDate(client.dateDebut) : "—"}
+				{/* Sidebar - 1/3 */}
+				<div className="space-y-5">
+					{/* Facturation card */}
+					<div className="card-premium p-5">
+						<div className="mb-4 flex items-center gap-2">
+							<CircleDollarSign
+								size={18}
+								className="text-primary"
+							/>
+							<h2 className="text-base font-semibold text-foreground">
+								Facturation
+							</h2>
 						</div>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-slate-500">Date de fin calculee</label>
-						<div className="text-sm text-slate-600">
-							{client.dateFinCalculee ? formatDate(client.dateFinCalculee) : "—"}
-						</div>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-slate-500">Nb jours pause</label>
-						<input
-							type="number"
-							defaultValue={client.nbJoursPause || 0}
-							onBlur={(e) =>
-								handleUpdate("nbJoursPause", parseInt(e.target.value) || 0)
-							}
-							className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm outline-none focus:border-[#D0003C]"
-						/>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-slate-500">
-							Date fin reelle
-						</label>
-						<div className="text-sm text-slate-600">
-							{client.dateFinReelle ? formatDate(client.dateFinReelle) : "—"}
-						</div>
-					</div>
-				</div>
-			</div>
 
-			{/* Contact */}
-			<div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
-				<h2 className="text-sm font-semibold text-slate-700">Contact</h2>
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Field label="Email" icon={<Mail size={14} />}>
-						<input
-							type="email"
-							defaultValue={client.email || ""}
-							onBlur={(e) => handleUpdate("email", e.target.value)}
-							className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#D0003C]"
-						/>
-					</Field>
-					<Field label="Telephone" icon={<Phone size={14} />}>
-						<input
-							type="tel"
-							defaultValue={client.phone || ""}
-							onBlur={(e) => handleUpdate("phone", e.target.value)}
-							className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#D0003C]"
-						/>
-					</Field>
-				</div>
-
-				<Field label="Notes">
-					<textarea
-						defaultValue={client.notes || ""}
-						onBlur={(e) => handleUpdate("notes", e.target.value)}
-						rows={3}
-						className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#D0003C]"
-						placeholder="Notes internes..."
-					/>
-				</Field>
-			</div>
-
-			{/* Paiements */}
-			<div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
-				<h2 className="text-sm font-semibold text-slate-700">
-					Paiements / Facturations
-				</h2>
-
-				<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-					<div>
-						<label className="mb-1 block text-xs text-slate-500">
-							Montant Contracte (TTC)
-						</label>
-						<div className="text-lg font-bold text-slate-800">
-							{formatEUR(client.montantContracteTTC)}
+						<div className="mb-4">
+							<p className="text-xs text-muted-foreground">
+								Montant contracte TTC
+							</p>
+							<p className="text-2xl font-bold text-primary">
+								{formatEUR(client.montantContracteTTC)}
+							</p>
 						</div>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-slate-500">
-							Total CA Collecte TTC
-						</label>
-						<div className="text-lg font-bold text-emerald-600">
-							{formatEUR(client.totalCollecte)}
-						</div>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-slate-500">
-							Restant a payer
-						</label>
-						<div className="text-lg font-bold text-slate-600">
-							{formatEUR(client.restantAPayer)}
-						</div>
-					</div>
-					<div>
-						<label className="mb-1 block text-xs text-slate-500">
-							% Avancement
-						</label>
-						<div className="flex items-center gap-2">
-							<div className="h-2 flex-1 rounded-full bg-slate-200">
+
+						<div className="mb-2">
+							<div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
 								<div
-									className="h-2 rounded-full bg-emerald-500 transition-all"
+									className="h-full rounded-full bg-primary transition-all duration-500"
 									style={{
-										width: `${Math.min(client.pourcentageAvancement, 100)}%`,
+										width: `${collectedPercentage}%`,
 									}}
 								/>
 							</div>
-							<span className="text-sm font-medium text-slate-600">
-								{client.pourcentageAvancement}%
-							</span>
+							<div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
+								<span>
+									Collecte :{" "}
+									{formatEUR(client.totalCollecte)}
+								</span>
+								<span>
+									Restant :{" "}
+									{formatEUR(client.restantAPayer)}
+								</span>
+							</div>
+						</div>
+
+						<p className="text-sm font-semibold text-foreground">
+							{collectedPercentage}% collecte
+						</p>
+					</div>
+
+					{/* Paiements card */}
+					<div className="card-premium p-5">
+						<div className="mb-4 flex items-center gap-2">
+							<CreditCard size={18} className="text-primary" />
+							<h2 className="text-base font-semibold text-foreground">
+								Paiements
+							</h2>
+						</div>
+
+						{client.payments.length > 0 ? (
+							<div className="space-y-0">
+								{client.payments.map((p: any) => (
+									<div
+										key={p._id}
+										className="flex items-center justify-between border-b border-border/20 py-2.5 last:border-b-0"
+									>
+										<div>
+											<p className="text-sm font-semibold text-foreground">
+												{formatEUR(p.amount)}
+											</p>
+											<p className="text-xs text-muted-foreground">
+												{p.confirmedAt
+													? formatDate(p.confirmedAt)
+													: formatDate(p.createdAt)}
+											</p>
+										</div>
+										<span
+											className={cn(
+												"inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium",
+												paymentStatusColors[
+													p.status
+												] ||
+													"bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+											)}
+										>
+											{paymentStatusLabels[p.status] ||
+												p.status}
+										</span>
+									</div>
+								))}
+							</div>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								Aucun paiement enregistre
+							</p>
+						)}
+					</div>
+
+					{/* Actions card */}
+					<div className="card-premium p-5">
+						<div className="mb-4 flex items-center gap-2">
+							<Settings size={18} className="text-primary" />
+							<h2 className="text-base font-semibold text-foreground">
+								Actions
+							</h2>
+						</div>
+
+						<div className="space-y-4">
+							<div>
+								<Label className="mb-1.5 text-xs text-muted-foreground">
+									Statut
+								</Label>
+								<Select
+									value={client.status}
+									onValueChange={(v) =>
+										handleUpdate("status", v)
+									}
+								>
+									<SelectTrigger className="h-9 rounded-lg">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{statusOptions.map((s) => (
+											<SelectItem key={s} value={s}>
+												{statusLabels[s] ||
+													s.replace(/_/g, " ")}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							<div>
+								<Label className="mb-1.5 text-xs text-muted-foreground">
+									Prestation
+								</Label>
+								<Select
+									value={client.prestation}
+									onValueChange={(v) =>
+										handleUpdate("prestation", v)
+									}
+								>
+									<SelectTrigger className="h-9 rounded-lg">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{prestationOptions.map((p) => (
+											<SelectItem key={p} value={p}>
+												{p}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							<div className="pt-2">
+								<Dialog
+									open={deleteDialogOpen}
+									onOpenChange={setDeleteDialogOpen}
+								>
+									<DialogTrigger asChild>
+										<button
+											type="button"
+											className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium text-destructive transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+										>
+											<Trash2 size={14} />
+											Supprimer ce client
+										</button>
+									</DialogTrigger>
+									<DialogContent>
+										<DialogHeader>
+											<DialogTitle>
+												Confirmer la suppression
+											</DialogTitle>
+											<DialogDescription>
+												Cette action est irreversible.
+												Le client{" "}
+												<span className="font-semibold">
+													{client.name}
+												</span>{" "}
+												sera definitivement supprime.
+											</DialogDescription>
+										</DialogHeader>
+										<DialogFooter>
+											<DialogClose asChild>
+												<Button variant="outline">
+													Annuler
+												</Button>
+											</DialogClose>
+											<Button
+												variant="destructive"
+												onClick={handleDelete}
+											>
+												<Trash2 size={14} />
+												Supprimer
+											</Button>
+										</DialogFooter>
+									</DialogContent>
+								</Dialog>
+							</div>
 						</div>
 					</div>
 				</div>
-
-				{/* Payments table */}
-				{client.payments.length > 0 ? (
-					<div className="overflow-x-auto">
-						<table className="w-full text-sm">
-							<thead>
-								<tr className="text-left text-xs text-slate-400 border-b border-slate-100">
-									<th className="pb-2 font-medium">Statut</th>
-									<th className="pb-2 font-medium">Montant</th>
-									<th className="pb-2 font-medium">Source</th>
-									<th className="pb-2 font-medium">Date</th>
-								</tr>
-							</thead>
-							<tbody>
-								{client.payments.map((p: any) => (
-									<tr key={p._id} className="border-t border-slate-50">
-										<td className="py-2">
-											<span
-												className={cn(
-													"rounded-full px-2 py-0.5 text-xs font-medium",
-													paymentStatusColors[p.status] || "bg-slate-100",
-												)}
-											>
-												{p.status}
-											</span>
-										</td>
-										<td className="py-2 font-medium text-slate-800">
-											{formatEUR(p.amount)}
-										</td>
-										<td className="py-2 text-slate-500">
-											{p.sourceType || p.provider}
-										</td>
-										<td className="py-2 text-slate-500">
-											{p.confirmedAt ? formatDate(p.confirmedAt) : formatDate(p.createdAt)}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-				) : (
-					<p className="text-sm text-slate-400">Aucun paiement enregistre</p>
-				)}
 			</div>
-		</div>
-	);
-}
-
-function Field({
-	label,
-	icon,
-	children,
-}: {
-	label: string;
-	icon?: React.ReactNode;
-	children: React.ReactNode;
-}) {
-	return (
-		<div>
-			<label className="mb-1.5 flex items-center gap-1 text-xs font-medium text-slate-500">
-				{icon}
-				{label}
-			</label>
-			{children}
 		</div>
 	);
 }

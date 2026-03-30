@@ -1,23 +1,84 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState } from "react";
-import { X, Send, Mail, UserPlus, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+	Send,
+	Mail,
+	Shield,
+	Target,
+	Dumbbell,
+	Loader2,
+	CheckCircle2,
+	User,
+	Phone,
+	Sparkles,
+} from "lucide-react";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 interface InviteModalProps {
 	onClose: () => void;
 }
 
+const ROLE_OPTIONS = [
+	{
+		value: "admin",
+		label: "Admin",
+		description: "Acces complet a toutes les fonctionnalites",
+		icon: Shield,
+		activeColor: "border-violet-500 bg-violet-500/5 ring-1 ring-violet-500/20",
+		iconColor: "text-violet-600",
+		iconBg: "bg-violet-500/10",
+	},
+	{
+		value: "sales",
+		label: "Sales",
+		description: "Acces au CRM, closing et setting",
+		icon: Target,
+		activeColor: "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/20",
+		iconColor: "text-blue-600",
+		iconBg: "bg-blue-500/10",
+	},
+	{
+		value: "coach",
+		label: "Coach",
+		description: "Acces aux fiches clients et bilans",
+		icon: Dumbbell,
+		activeColor: "border-emerald-500 bg-emerald-500/5 ring-1 ring-emerald-500/20",
+		iconColor: "text-emerald-600",
+		iconBg: "bg-emerald-500/10",
+	},
+] as const;
+
 export function InviteModal({ onClose }: InviteModalProps) {
-	const invite = useMutation(api.users.invite);
+	const inviteAndSendEmail = useAction(api.auth.inviteAndSendEmail);
+
+	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
-	const [role, setRole] = useState<"admin" | "sales" | "coach">("sales");
+	const [phone, setPhone] = useState("");
+	const [specialty, setSpecialty] = useState("");
+	const [role, setRole] = useState<string>("sales");
 	const [loading, setLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const [error, setError] = useState("");
 
 	const handleInvite = async () => {
+		if (!name.trim()) {
+			setError("Veuillez entrer un nom");
+			return;
+		}
 		if (!email.trim()) {
 			setError("Veuillez entrer un email");
 			return;
@@ -30,135 +91,243 @@ export function InviteModal({ onClose }: InviteModalProps) {
 		setLoading(true);
 		setError("");
 		try {
-			await invite({ email: email.trim(), role });
+			const siteUrl = window.location.origin;
+			await inviteAndSendEmail({
+				email: email.trim(),
+				name: name.trim(),
+				role: role as "admin" | "sales" | "coach",
+				siteUrl,
+			});
+
 			setSuccess(true);
-			setTimeout(() => onClose(), 1500);
+			setTimeout(() => onClose(), 2500);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Erreur lors de l'invitation");
+			setError(
+				err instanceof Error
+					? err.message
+					: "Erreur lors de l'invitation"
+			);
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-			<div
-				className="absolute inset-0 bg-black/50"
-				onClick={onClose}
-				onKeyDown={() => {}}
-				role="presentation"
-			/>
-			<div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl">
-				{/* Header */}
-				<div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-					<div className="flex items-center gap-2">
-						<UserPlus size={20} className="text-[#D0003C]" />
-						<h2 className="text-lg font-bold text-slate-800">Inviter un membre</h2>
-					</div>
-					<button
-						type="button"
-						onClick={onClose}
-						className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-					>
-						<X size={20} />
-					</button>
-				</div>
+		<Dialog
+			open
+			onOpenChange={(v) => {
+				if (!v) onClose();
+			}}
+		>
+			<DialogContent className="max-w-md p-0 overflow-hidden">
+				<div className="p-6">
+					<DialogHeader>
+						<DialogTitle className="text-lg font-semibold">
+							Inviter un membre
+						</DialogTitle>
+						<DialogDescription>
+							Ajoutez un nouveau membre a l&apos;equipe
+						</DialogDescription>
+					</DialogHeader>
 
-				{/* Content */}
-				<div className="space-y-4 px-6 py-5">
 					{success ? (
-						<div className="flex flex-col items-center gap-3 py-6">
-							<div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-								<Send size={20} className="text-green-600" />
+						<div className="flex flex-col items-center gap-5 py-10 animate-fade-in">
+							<div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 animate-success-check">
+								<CheckCircle2
+									size={40}
+									className="text-emerald-500"
+								/>
 							</div>
-							<p className="text-sm font-medium text-green-700">
-								Invitation envoyee avec succes !
-							</p>
-							<p className="text-xs text-slate-500">{email}</p>
-						</div>
-					) : (
-						<>
-							{/* Email */}
-							<div>
-								<label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
-									Adresse email
-								</label>
-								<div className="relative">
-									<Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-									<input
-										type="email"
-										value={email}
-										onChange={(e) => {
-											setEmail(e.target.value);
-											setError("");
-										}}
-										placeholder="nom@exemple.com"
-										className="w-full rounded-lg border border-slate-300 py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition-colors focus:border-[#D0003C] focus:ring-1 focus:ring-[#D0003C]"
-										autoFocus
-									/>
-								</div>
-							</div>
-
-							{/* Role */}
-							<div>
-								<label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
-									Role
-								</label>
-								<div className="relative">
-									<select
-										value={role}
-										onChange={(e) => setRole(e.target.value as "admin" | "sales" | "coach")}
-										className="w-full appearance-none rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors focus:border-[#D0003C] focus:ring-1 focus:ring-[#D0003C]"
-									>
-										<option value="admin">Admin</option>
-										<option value="sales">Sales</option>
-										<option value="coach">Coach</option>
-									</select>
-									<ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-								</div>
-								<p className="mt-1.5 text-xs text-slate-400">
-									{role === "admin" && "Acces complet a toutes les fonctionnalites"}
-									{role === "sales" && "Acces au CRM, closing et setting"}
-									{role === "coach" && "Acces aux fiches clients et bilans"}
+							<div className="text-center">
+								<p className="text-lg font-semibold text-foreground">
+									Membre ajoute
+								</p>
+								<p className="mt-1.5 text-sm text-muted-foreground">
+									<span className="font-medium text-foreground">{name}</span> a ete invite avec succes
+								</p>
+								<p className="mt-1 text-xs text-muted-foreground">
+									{email}
 								</p>
 							</div>
+						</div>
+					) : (
+						<div className="space-y-6 mt-5 animate-fade-in">
+							{/* ── Section: Informations ── */}
+							<div className="space-y-4">
+								<p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+									Informations
+								</p>
 
-							{/* Error */}
+								{/* Nom complet */}
+								<div className="space-y-1.5">
+									<Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+										Nom complet *
+									</Label>
+									<div className="relative">
+										<User
+											size={15}
+											className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground"
+										/>
+										<Input
+											type="text"
+											value={name}
+											onChange={(e) => {
+												setName(e.target.value);
+												setError("");
+											}}
+											placeholder="Jean Dupont"
+											className="h-10 rounded-xl pl-10 border-border"
+											autoFocus
+										/>
+									</div>
+								</div>
+
+								{/* Email */}
+								<div className="space-y-1.5">
+									<Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+										Email *
+									</Label>
+									<div className="relative">
+										<Mail
+											size={15}
+											className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground"
+										/>
+										<Input
+											type="email"
+											value={email}
+											onChange={(e) => {
+												setEmail(e.target.value);
+												setError("");
+											}}
+											placeholder="nom@exemple.com"
+											className="h-10 rounded-xl pl-10 border-border"
+										/>
+									</div>
+								</div>
+
+								{/* Telephone */}
+								<div className="space-y-1.5">
+									<Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+										Telephone
+									</Label>
+									<div className="relative">
+										<Phone
+											size={15}
+											className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground"
+										/>
+										<Input
+											type="tel"
+											value={phone}
+											onChange={(e) => setPhone(e.target.value)}
+											placeholder="+33 6 12 34 56 78"
+											className="h-10 rounded-xl pl-10 border-border"
+										/>
+									</div>
+								</div>
+							</div>
+
+							{/* ── Section: Role & Specialite ── */}
+							<div className="space-y-4">
+								<p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+									Role & Specialite
+								</p>
+
+								{/* Role selector — visual cards */}
+								<div className="grid grid-cols-3 gap-2">
+									{ROLE_OPTIONS.map((opt) => {
+										const Icon = opt.icon;
+										const isSelected = role === opt.value;
+										return (
+											<button
+												key={opt.value}
+												type="button"
+												onClick={() => setRole(opt.value)}
+												className={cn(
+													"flex flex-col items-center gap-2.5 rounded-xl border p-4 transition-all",
+													isSelected
+														? opt.activeColor
+														: "border-border hover:border-primary/30"
+												)}
+											>
+												<div
+													className={cn(
+														"flex h-10 w-10 items-center justify-center rounded-xl",
+														isSelected
+															? opt.iconBg
+															: "bg-muted"
+													)}
+												>
+													<Icon
+														size={18}
+														className={
+															isSelected
+																? opt.iconColor
+																: "text-muted-foreground"
+														}
+													/>
+												</div>
+												<div className="text-center">
+													<span
+														className={cn(
+															"text-xs font-semibold block",
+															isSelected
+																? "text-foreground"
+																: "text-muted-foreground"
+														)}
+													>
+														{opt.label}
+													</span>
+													<span className="text-[10px] text-muted-foreground leading-tight mt-0.5 block">
+														{opt.description}
+													</span>
+												</div>
+											</button>
+										);
+									})}
+								</div>
+
+								{/* Specialite */}
+								<div className="space-y-1.5">
+									<Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+										Specialite
+									</Label>
+									<div className="relative">
+										<Sparkles
+											size={15}
+											className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-muted-foreground"
+										/>
+										<Input
+											type="text"
+											value={specialty}
+											onChange={(e) => setSpecialty(e.target.value)}
+											placeholder="Closing, Setting, Coaching sportif..."
+											className="h-10 rounded-xl pl-10 border-border"
+										/>
+									</div>
+								</div>
+							</div>
+
 							{error && (
-								<p className="text-sm text-red-600">{error}</p>
+								<p className="text-sm text-destructive">{error}</p>
 							)}
-						</>
-					)}
-				</div>
 
-				{/* Footer */}
-				{!success && (
-					<div className="border-t border-slate-200 px-6 py-4">
-						<div className="flex justify-end gap-2">
-							<button
-								type="button"
-								onClick={onClose}
-								className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-							>
-								Annuler
-							</button>
-							<button
-								type="button"
+							{/* Submit */}
+							<Button
 								onClick={handleInvite}
 								disabled={loading}
-								className="flex items-center gap-1.5 rounded-lg bg-[#D0003C] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#B00032] disabled:opacity-50"
+								className="h-11 w-full rounded-xl"
 							>
 								{loading ? (
-									<div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+									<Loader2 className="h-4 w-4 animate-spin" />
 								) : (
 									<Send size={14} />
 								)}
 								Envoyer l&apos;invitation
-							</button>
+							</Button>
 						</div>
-					</div>
-				)}
-			</div>
-		</div>
+					)}
+				</div>
+			</DialogContent>
+		</Dialog>
 	);
 }

@@ -5,32 +5,58 @@ import { api } from "../../../../../convex/_generated/api";
 import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Search, Filter } from "lucide-react";
+import {
+	ChevronDown,
+	ChevronRight,
+	Search,
+	ExternalLink,
+	UserCircle,
+} from "lucide-react";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
 const statusColors: Record<string, string> = {
-	acompte: "bg-orange-100 text-orange-700",
-	nouveau_client: "bg-yellow-100 text-yellow-700",
-	en_attente_programme: "bg-blue-100 text-blue-700",
-	active: "bg-emerald-100 text-emerald-700",
-	paused: "bg-slate-100 text-slate-600",
-	renew: "bg-violet-100 text-violet-700",
-	fin_proche: "bg-red-100 text-red-700",
-	termine: "bg-slate-200 text-slate-600",
-	archived: "bg-slate-100 text-slate-400",
+	acompte: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
+	nouveau_client: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20",
+	en_attente_programme: "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20",
+	active: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
+	paused: "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+	en_attente: "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20",
+	renew: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-500/20",
+	fin_proche: "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20",
+	termine: "bg-slate-50 dark:bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-500/20",
+	archived: "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+	resilie: "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20",
 };
 
 const statusLabels: Record<string, string> = {
 	acompte: "Acompte",
 	nouveau_client: "Nouveau client",
-	en_attente_programme: "En attente de programme",
-	active: "Active",
-	paused: "Paused",
-	renew: "Renew",
+	en_attente_programme: "En attente",
+	active: "Actif",
+	paused: "Pause",
+	en_attente: "En attente",
+	renew: "Renouvellement",
 	fin_proche: "Fin proche",
 	termine: "Termine",
-	archived: "Archived",
+	archived: "Archive",
+	resilie: "Resilie",
 };
+
+function isEndingSoon(dateFinReelle: number | undefined): boolean {
+	if (!dateFinReelle) return false;
+	const now = Date.now();
+	const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+	return dateFinReelle > now && dateFinReelle - now < thirtyDays;
+}
 
 export default function ListingClientsPage() {
 	const grouped = useQuery(api.clients.listGrouped);
@@ -39,13 +65,22 @@ export default function ListingClientsPage() {
 
 	if (grouped === undefined) {
 		return (
-			<div className="mx-auto max-w-7xl">
-				<h1 className="mb-6 text-xl font-bold text-slate-800">Listing clients</h1>
+			<div className="mx-auto max-w-7xl animate-fade-in">
+				<div className="mb-8 flex items-end justify-between">
+					<div>
+						<h1 className="text-2xl font-bold tracking-tight text-foreground">
+							Fiches Clients
+						</h1>
+						<p className="mt-1 text-sm text-muted-foreground">
+							Chargement...
+						</p>
+					</div>
+				</div>
 				<div className="space-y-4">
 					{[...Array(3)].map((_, i) => (
 						<div
 							key={`skeleton-${i}`}
-							className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white"
+							className="card-premium h-32 animate-pulse"
 						/>
 					))}
 				</div>
@@ -57,162 +92,280 @@ export default function ListingClientsPage() {
 		setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
 	};
 
+	const totalClients = Object.values(grouped).reduce(
+		(sum, group) =>
+			sum +
+			Object.values(group.byStatus).reduce(
+				(s, arr) => s + arr.length,
+				0,
+			),
+		0,
+	);
+
 	return (
-		<div className="mx-auto max-w-7xl">
-			<div className="mb-6 flex items-center justify-between">
-				<h1 className="text-xl font-bold text-slate-800">Listing clients</h1>
-				<div className="flex items-center gap-3">
-					<div className="relative">
-						<Search size={16} className="absolute top-2.5 left-3 text-slate-400" />
-						<input
-							type="text"
-							placeholder="Rechercher..."
-							value={search}
-							onChange={(e) => setSearch(e.target.value)}
-							className="rounded-lg border border-slate-300 py-2 pr-3 pl-9 text-sm outline-none focus:border-[#D0003C]"
-						/>
-					</div>
+		<div className="mx-auto max-w-7xl animate-page-enter">
+			{/* Header */}
+			<div className="mb-8 flex items-end justify-between">
+				<div>
+					<h1 className="text-2xl font-bold tracking-tight text-foreground">
+						Fiches Clients
+					</h1>
+					<p className="mt-1 text-sm text-muted-foreground">
+						{totalClients} client{totalClients !== 1 ? "s" : ""} au total
+					</p>
+				</div>
+				<div className="relative">
+					<Search
+						size={16}
+						className="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-muted-foreground"
+					/>
+					<Input
+						type="text"
+						placeholder="Rechercher un client..."
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						className="h-10 w-[260px] rounded-xl border-border/50 dark:border-white/10 bg-card dark:bg-[#2A2A28] pl-9 shadow-sm dark:shadow-black/20"
+					/>
 				</div>
 			</div>
 
-			<div className="space-y-4">
+			{/* Coach groups */}
+			<div className="space-y-6">
 				{Object.entries(grouped).map(([coachKey, group]) => {
-					const coachName = group.coach?.name || "(Vide)";
-					const totalClients = Object.values(group.byStatus).reduce(
-						(sum, arr) => sum + arr.length,
-						0,
-					);
+					const coachName = group.coach?.name || "Non assigne";
+					const coachInitial =
+						group.coach?.name?.charAt(0)?.toUpperCase() || "?";
+					const groupTotalClients = Object.values(
+						group.byStatus,
+					).reduce((sum, arr) => sum + arr.length, 0);
+					const isCollapsed = collapsed[coachKey];
 
 					return (
 						<div
 							key={coachKey}
-							className="rounded-xl border border-slate-200 bg-white overflow-hidden"
+							className="animate-fade-in"
 						>
 							{/* Coach header */}
 							<button
 								type="button"
 								onClick={() => toggleCollapse(coachKey)}
-								className="flex w-full items-center gap-2 bg-slate-50 px-4 py-3 text-left"
+								className="group mb-3 flex w-full items-center gap-3 text-left"
 							>
-								{collapsed[coachKey] ? (
-									<ChevronRight size={16} className="text-slate-400" />
-								) : (
-									<ChevronDown size={16} className="text-slate-400" />
-								)}
-								<span className="text-sm font-semibold text-slate-700">
-									Coach attitré :
+								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
+									{coachInitial}
+								</div>
+								<span className="text-lg font-semibold text-foreground">
+									{coachName}
 								</span>
-								<span className="text-sm font-bold text-slate-800">{coachName}</span>
-								<span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-600">
-									{totalClients}
+								<span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+									{groupTotalClients}
 								</span>
+								<div className="ml-auto text-muted-foreground transition-transform">
+									{isCollapsed ? (
+										<ChevronRight size={18} />
+									) : (
+										<ChevronDown size={18} />
+									)}
+								</div>
 							</button>
 
-							{!collapsed[coachKey] && (
-								<div className="divide-y divide-slate-100">
-									{Object.entries(group.byStatus).map(([status, clients]) => {
-										const filtered = search
-											? clients.filter(
-													(c: any) =>
-														c.name.toLowerCase().includes(search.toLowerCase()) ||
-														c.email?.toLowerCase().includes(search.toLowerCase()),
-												)
-											: clients;
+							{/* Divider */}
+							<div className="mb-4 h-px bg-border/60" />
 
-										if (filtered.length === 0) return null;
+							{!isCollapsed && (
+								<div className="space-y-5 pl-[52px]">
+									{Object.entries(group.byStatus).map(
+										([status, clients]) => {
+											const filtered = search
+												? clients.filter(
+														(c: any) =>
+															c.name
+																.toLowerCase()
+																.includes(
+																	search.toLowerCase(),
+																) ||
+															c.email
+																?.toLowerCase()
+																.includes(
+																	search.toLowerCase(),
+																),
+													)
+												: clients;
 
-										return (
-											<div key={status} className="px-4 py-2">
-												<div className="mb-2 flex items-center gap-2">
-													<span
-														className={cn(
-															"rounded-full px-2 py-0.5 text-xs font-medium",
-															statusColors[status] || "bg-slate-100 text-slate-600",
-														)}
-													>
-														{statusLabels[status] || status}
-													</span>
-													<span className="text-xs text-slate-400">
-														{filtered.length}
-													</span>
-												</div>
+											if (filtered.length === 0)
+												return null;
 
-												<div className="overflow-x-auto">
-													<table className="w-full text-sm">
-														<thead>
-															<tr className="text-left text-xs text-slate-400">
-																<th className="pb-1 font-medium">Clients</th>
-																<th className="pb-1 font-medium">Fichier coaching</th>
-																<th className="pb-1 font-medium">E-mail</th>
-																<th className="pb-1 font-medium">Telephone</th>
-																<th className="pb-1 font-medium">Statut Client</th>
-																<th className="pb-1 font-medium">Date de fin</th>
-															</tr>
-														</thead>
-														<tbody>
-															{filtered.map((client: any) => (
-																<tr
-																	key={client._id}
-																	className="border-t border-slate-50 hover:bg-slate-50"
-																>
-																	<td className="py-2">
-																		<Link
-																			href={`/operationnel/clients/${client._id}`}
-																			className="font-medium text-slate-800 hover:text-[#D0003C]"
+											return (
+												<div
+													key={status}
+													className="animate-slide-in"
+												>
+													{/* Status badge */}
+													<div className="mb-3 flex items-center gap-2">
+														<span
+															className={cn(
+																"inline-flex rounded-full px-3 py-1 text-xs font-medium",
+																statusColors[
+																	status
+																] || "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+															)}
+														>
+															{statusLabels[
+																status
+															] || status}
+														</span>
+														<span className="text-xs text-muted-foreground">
+															{filtered.length}{" "}
+															client
+															{filtered.length !==
+															1
+																? "s"
+																: ""}
+														</span>
+													</div>
+
+													{/* Table */}
+													<div className="card-premium overflow-hidden rounded-xl">
+														<Table>
+															<TableHeader>
+																<TableRow className="border-b border-border/20">
+																	<TableHead className="bg-muted/30 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+																		Client
+																	</TableHead>
+																	<TableHead className="bg-muted/30 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+																		Fichier coaching
+																	</TableHead>
+																	<TableHead className="bg-muted/30 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+																		E-mail
+																	</TableHead>
+																	<TableHead className="bg-muted/30 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+																		Telephone
+																	</TableHead>
+																	<TableHead className="bg-muted/30 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+																		Statut
+																	</TableHead>
+																	<TableHead className="bg-muted/30 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+																		Date de fin
+																	</TableHead>
+																</TableRow>
+															</TableHeader>
+															<TableBody>
+																{filtered.map(
+																	(
+																		client: any,
+																	) => (
+																		<TableRow
+																			key={
+																				client._id
+																			}
+																			className="table-row-hover border-b border-border/20"
 																		>
-																			{client.name}
-																		</Link>
-																	</td>
-																	<td className="py-2">
-																		{client.trainingLogUrl ? (
-																			<a
-																				href={client.trainingLogUrl}
-																				target="_blank"
-																				rel="noopener noreferrer"
-																				className="text-blue-500 hover:underline"
+																			<TableCell className="py-3 px-4">
+																				<Link
+																					href={`/operationnel/clients/${client._id}`}
+																					className="font-medium text-foreground transition-colors hover:text-primary"
+																				>
+																					{
+																						client.name
+																					}
+																				</Link>
+																			</TableCell>
+																			<TableCell className="py-3 px-4">
+																				{client.trainingLogUrl ? (
+																					<a
+																						href={
+																							client.trainingLogUrl
+																						}
+																						target="_blank"
+																						rel="noopener noreferrer"
+																						className="inline-flex items-center gap-1 text-sm text-primary/80 transition-colors hover:text-primary"
+																					>
+																						<span>
+																							Ouvrir
+																						</span>
+																						<ExternalLink
+																							size={
+																								12
+																							}
+																						/>
+																					</a>
+																				) : (
+																					<span className="text-sm text-muted-foreground">
+																						--
+																					</span>
+																				)}
+																			</TableCell>
+																			<TableCell className="py-3 px-4 text-sm text-muted-foreground">
+																				{client.email ||
+																					"--"}
+																			</TableCell>
+																			<TableCell className="py-3 px-4 text-sm text-muted-foreground">
+																				{client.phone ||
+																					"--"}
+																			</TableCell>
+																			<TableCell className="py-3 px-4">
+																				<span
+																					className={cn(
+																						"inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-medium",
+																						statusColors[
+																							client
+																								.status
+																						] ||
+																							"bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+																					)}
+																				>
+																					{statusLabels[
+																						client
+																							.status
+																					] ||
+																						client.status}
+																				</span>
+																			</TableCell>
+																			<TableCell
+																				className={cn(
+																					"py-3 px-4 text-sm",
+																					isEndingSoon(
+																						client.dateFinReelle,
+																					)
+																						? "font-medium text-amber-600 dark:text-amber-400"
+																						: "text-muted-foreground",
+																				)}
 																			>
-																				Google Sheets
-																			</a>
-																		) : (
-																			<span className="text-slate-300">—</span>
-																		)}
-																	</td>
-																	<td className="py-2 text-slate-600">
-																		{client.email || "—"}
-																	</td>
-																	<td className="py-2 text-slate-600">
-																		{client.phone || "—"}
-																	</td>
-																	<td className="py-2">
-																		<span
-																			className={cn(
-																				"rounded-full px-2 py-0.5 text-xs font-medium",
-																				statusColors[client.status] ||
-																					"bg-slate-100 text-slate-600",
-																			)}
-																		>
-																			{statusLabels[client.status] || client.status}
-																		</span>
-																	</td>
-																	<td className="py-2 text-slate-500">
-																		{client.dateFinReelle
-																			? formatDateShort(client.dateFinReelle)
-																			: "—"}
-																	</td>
-																</tr>
-															))}
-														</tbody>
-													</table>
+																				{client.dateFinReelle
+																					? formatDateShort(
+																							client.dateFinReelle,
+																						)
+																					: "--"}
+																			</TableCell>
+																		</TableRow>
+																	),
+																)}
+															</TableBody>
+														</Table>
+													</div>
 												</div>
-											</div>
-										);
-									})}
+											);
+										},
+									)}
 								</div>
 							)}
 						</div>
 					);
 				})}
 			</div>
+
+			{/* Empty state */}
+			{totalClients === 0 && (
+				<div className="flex flex-col items-center justify-center py-20">
+					<UserCircle
+						size={48}
+						className="mb-4 text-muted-foreground/40"
+					/>
+					<p className="text-sm text-muted-foreground">
+						Aucun client trouve
+					</p>
+				</div>
+			)}
 		</div>
 	);
 }

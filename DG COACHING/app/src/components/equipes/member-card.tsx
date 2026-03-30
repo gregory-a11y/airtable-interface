@@ -4,16 +4,23 @@ import { cn } from "@/lib/utils";
 import { Mail, Phone, Percent, DollarSign, Users } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-const ROLE_BADGE: Record<string, { label: string; color: string }> = {
-	admin: { label: "Admin", color: "bg-violet-100 text-violet-700" },
-	sales: { label: "Sales", color: "bg-blue-100 text-blue-700" },
-	coach: { label: "Coach", color: "bg-green-100 text-green-700" },
-};
-
-const STATUS_DOT: Record<string, { label: string; color: string }> = {
-	active: { label: "In Team", color: "bg-green-500" },
-	invited: { label: "Invite", color: "bg-amber-500" },
-	disabled: { label: "Off Team", color: "bg-slate-400" },
+const ROLE_BADGE: Record<
+	string,
+	{ label: string; className: string }
+> = {
+	admin: {
+		label: "Admin",
+		className: "bg-primary/10 text-primary border border-primary/20",
+	},
+	sales: {
+		label: "Sales",
+		className: "bg-blue-500/10 text-blue-500 border border-blue-500/20",
+	},
+	coach: {
+		label: "Coach",
+		className:
+			"bg-emerald-500/10 text-emerald-500 border border-emerald-500/20",
+	},
 };
 
 interface Member {
@@ -33,102 +40,139 @@ interface Member {
 
 interface MemberCardProps {
 	member: Member;
+	index: number;
 	onClick: () => void;
 }
 
-export function MemberCard({ member, onClick }: MemberCardProps) {
+export function MemberCard({ member, index, onClick }: MemberCardProps) {
 	const role = ROLE_BADGE[member.role || "coach"];
-	const status = STATUS_DOT[member.status || "active"];
-	const initials = member.name
-		? member.name
-				.split(" ")
-				.map((n) => n[0])
-				.join("")
-				.toUpperCase()
-				.slice(0, 2)
+	const isActive = member.status === "active";
+	const initial = member.name
+		? member.name.charAt(0).toUpperCase()
 		: "?";
 
 	return (
-		<button
-			type="button"
+		<div
+			className="card-premium gradient-border animate-fade-in cursor-pointer"
+			style={{ animationDelay: `${index * 0.05}s`, opacity: 0 }}
 			onClick={onClick}
-			className="w-full rounded-xl border border-slate-200 bg-white p-5 text-left transition-all hover:border-slate-300 hover:shadow-md"
+			role="button"
+			tabIndex={0}
+			onKeyDown={(e) => {
+				if (e.key === "Enter") onClick();
+			}}
 		>
-			{/* Top section */}
-			<div className="flex items-start gap-3">
-				{member.image ? (
-					<img
-						src={member.image}
-						alt={member.name || ""}
-						className="h-12 w-12 rounded-full object-cover"
+			<div className="relative p-5">
+				{/* Status dot */}
+				<div className="absolute top-4 right-4">
+					<div
+						className={cn(
+							"h-2.5 w-2.5 rounded-full",
+							isActive
+								? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]"
+								: "bg-muted-foreground/40"
+						)}
 					/>
-				) : (
-					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D0003C] text-sm font-bold text-white">
-						{initials}
-					</div>
-				)}
-				<div className="flex-1 min-w-0">
-					<div className="flex items-center gap-2">
-						<h3 className="truncate text-sm font-semibold text-slate-800">
-							{member.name || "Sans nom"}
-						</h3>
-						<div className={cn("h-2 w-2 rounded-full flex-shrink-0", status.color)} title={status.label} />
-					</div>
-					<div className="mt-1 flex items-center gap-2">
-						<span
-							className={cn(
-								"inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold",
-								role.color,
-							)}
-						>
-							{role.label}
-						</span>
-						<span className="text-[11px] text-slate-400">{status.label}</span>
-					</div>
 				</div>
-			</div>
 
-			{/* Bio */}
-			{(member.bio || member.specialty) && (
-				<p className="mt-3 line-clamp-2 text-xs text-slate-500">
-					{member.bio || member.specialty}
-				</p>
-			)}
+				{/* Avatar + Name + Role — centered */}
+				<div className="flex flex-col items-center">
+					{member.image ? (
+						<img
+							src={member.image}
+							alt={member.name || ""}
+							className="h-14 w-14 rounded-full object-cover"
+						/>
+					) : (
+						<div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-xl font-bold text-white shadow-sm shadow-primary/20">
+							{initial}
+						</div>
+					)}
 
-			{/* Separator */}
-			<div className="my-3 border-t border-slate-100" />
+					<h3 className="mt-3 text-base font-semibold text-foreground text-center truncate max-w-full">
+						{member.name || "Sans nom"}
+					</h3>
 
-			{/* Contact & stats */}
-			<div className="space-y-1.5">
-				{member.email && (
-					<div className="flex items-center gap-2 text-xs text-slate-500">
-						<Mail size={12} className="text-slate-400 flex-shrink-0" />
-						<span className="truncate">{member.email}</span>
-					</div>
-				)}
-				{member.phone && (
-					<div className="flex items-center gap-2 text-xs text-slate-500">
-						<Phone size={12} className="text-slate-400 flex-shrink-0" />
-						{member.phone}
-					</div>
-				)}
-				{member.role === "sales" && member.commissionPercent !== undefined && (
-					<div className="flex items-center gap-2 text-xs text-slate-500">
-						<Percent size={12} className="text-blue-400 flex-shrink-0" />
-						Commission : {member.commissionPercent}%
-					</div>
-				)}
-				{member.role === "coach" && member.pricePerStudent !== undefined && (
-					<div className="flex items-center gap-2 text-xs text-slate-500">
-						<DollarSign size={12} className="text-green-400 flex-shrink-0" />
-						{member.pricePerStudent} EUR / eleve
-					</div>
-				)}
-				<div className="flex items-center gap-2 text-xs text-slate-500">
-					<Users size={12} className="text-slate-400 flex-shrink-0" />
-					{member.clientCount ?? 0} client{(member.clientCount ?? 0) !== 1 ? "s" : ""} actif{(member.clientCount ?? 0) !== 1 ? "s" : ""}
+					<span
+						className={cn(
+							"mt-1.5 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium",
+							role?.className
+						)}
+					>
+						{role?.label || "Coach"}
+					</span>
 				</div>
+
+				{/* Divider */}
+				<div className="mx-0 my-3 border-t border-border/50" />
+
+				{/* Info section */}
+				<div className="space-y-2">
+					{member.email && (
+						<div className="flex items-center justify-between">
+							<span className="text-xs text-muted-foreground">Email</span>
+							<span className="flex items-center gap-1.5 text-sm font-medium text-foreground truncate max-w-[60%]">
+								<Mail size={12} className="flex-shrink-0 text-muted-foreground/60" />
+								<span className="truncate">{member.email}</span>
+							</span>
+						</div>
+					)}
+
+					{member.phone && (
+						<div className="flex items-center justify-between">
+							<span className="text-xs text-muted-foreground">Telephone</span>
+							<span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+								<Phone size={12} className="flex-shrink-0 text-muted-foreground/60" />
+								{member.phone}
+							</span>
+						</div>
+					)}
+
+					{member.role === "sales" &&
+						member.commissionPercent !== undefined && (
+							<div className="flex items-center justify-between">
+								<span className="text-xs text-muted-foreground">
+									Commission
+								</span>
+								<span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+									<Percent size={12} className="flex-shrink-0 text-blue-500/60" />
+									{member.commissionPercent}%
+								</span>
+							</div>
+						)}
+
+					{member.role === "coach" &&
+						member.pricePerStudent !== undefined && (
+							<div className="flex items-center justify-between">
+								<span className="text-xs text-muted-foreground">
+									Prix / eleve
+								</span>
+								<span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+									<DollarSign size={12} className="flex-shrink-0 text-emerald-500/60" />
+									{member.pricePerStudent} EUR
+								</span>
+							</div>
+						)}
+
+					{member.role === "coach" && (
+						<div className="flex items-center justify-between">
+							<span className="text-xs text-muted-foreground">Clients</span>
+							<span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+								<Users size={12} className="flex-shrink-0 text-muted-foreground/60" />
+								{member.clientCount ?? 0} actif
+								{(member.clientCount ?? 0) !== 1 ? "s" : ""}
+							</span>
+						</div>
+					)}
+				</div>
+
+				{/* Specialty / Bio */}
+				{(member.specialty || member.bio) && (
+					<p className="mt-3 text-xs text-muted-foreground italic line-clamp-2">
+						{member.specialty || member.bio}
+					</p>
+				)}
 			</div>
-		</button>
+		</div>
 	);
 }

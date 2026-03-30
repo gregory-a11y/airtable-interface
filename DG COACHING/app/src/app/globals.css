@@ -1,20 +1,595 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode in Tailwind v4 */
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   PRIME COACHING — Premium Design System
+   ============================================================ */
+
 @theme {
-	--color-primary: #D0003C;
-	--color-primary-light: #E84B5E;
-	--color-primary-50: #FEF2F5;
-	--color-primary-100: #FDD5DE;
-	--color-success: #10B981;
-	--color-warning: #F59E0B;
-	--color-error: #EF4444;
-	--color-info: #3B82F6;
-	--font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-	--font-display: "Inter Display", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* ── Brand Colors ────────────────────────────────────────── */
+  --color-primary: #D0003C;
+  --color-primary-light: #E84B5E;
+  --color-primary-dark: #A30030;
+  --color-primary-50: #FEF2F5;
+  --color-primary-100: #FDD5DE;
+  --color-primary-foreground: #FFFFFF;
+
+  /* ── Semantic Colors ─────────────────────────────────────── */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+
+  /* ── Surface & Layout ────────────────────────────────────── */
+  --color-background: #FAFAFA;
+  --color-foreground: #111827;
+
+  --color-card: #FFFFFF;
+  --color-card-foreground: #111827;
+
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #111827;
+
+  --color-secondary: #F5F5F5;
+  --color-secondary-foreground: #111827;
+
+  --color-muted: #F5F5F5;
+  --color-muted-foreground: #6B7280;
+
+  --color-accent: #F5F5F5;
+  --color-accent-foreground: #111827;
+
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #FFFFFF;
+
+  /* ── Borders & Inputs ────────────────────────────────────── */
+  --color-border: #F0F0F0;
+  --color-input: #F0F0F0;
+  --color-ring: #D0003C;
+
+  /* ── Chart Palette ───────────────────────────────────────── */
+  --color-chart-1: #D0003C;
+  --color-chart-2: #3B82F6;
+  --color-chart-3: #10B981;
+  --color-chart-4: #F59E0B;
+  --color-chart-5: #8B5CF6;
+
+  /* ── Radius ──────────────────────────────────────────────── */
+  --radius: 0.75rem;
+
+  /* ── Typography ──────────────────────────────────────────── */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter Display", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* ============================================================
+   Base Styles
+   ============================================================ */
+
 body {
-	font-family: var(--font-sans);
-	background-color: #F8FAFC;
-	color: #0F172A;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   Scrollbar — thin & subtle
+   ============================================================ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================================
+   Typography — letter-spacing for headings
+   ============================================================ */
+
+.tracking-heading {
+  letter-spacing: -0.025em;
+}
+
+.tracking-tight-heading {
+  letter-spacing: -0.035em;
+}
+
+.tracking-display {
+  letter-spacing: -0.04em;
+}
+
+/* ============================================================
+   Keyframes — Premium Animations
+   ============================================================ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 15px rgba(208, 0, 60, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(208, 0, 60, 0.25);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes number-count {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   Animation Utilities
+   ============================================================ */
+
+.animate-fade-in {
+  opacity: 0;
+  animation: fade-in 0.4s ease-out both;
+}
+
+.animate-slide-in {
+  opacity: 0;
+  animation: slide-in-left 0.3s ease-out both;
+}
+
+.animate-scale-in {
+  opacity: 0;
+  animation: scale-in 0.3s ease-out both;
+}
+
+.animate-number {
+  opacity: 0;
+  animation: number-count 0.5s ease-out both;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   Tabular Nums — consistent numeric widths
+   ============================================================ */
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Funnel stroke draw animation
+   ============================================================ */
+
+@keyframes funnel-draw {
+  from {
+    stroke-dashoffset: 2000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-funnel-draw {
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: funnel-draw 1.2s ease-out 0.3s both;
+}
+
+/* ============================================================
+   Funnel glow pulse
+   ============================================================ */
+
+@keyframes funnel-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(208, 0, 60, 0.08));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(208, 0, 60, 0.15));
+  }
+}
+
+.animate-funnel-glow {
+  animation: funnel-glow 3s ease-in-out infinite;
+}
+
+/* ============================================================
+   Success check animation
+   ============================================================ */
+
+@keyframes success-check {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-success-check {
+  animation: success-check 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ============================================================
+   Glow Effects — soft, premium
+   ============================================================ */
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(208, 0, 60, 0.12), 0 0 40px rgba(208, 0, 60, 0.06);
+}
+
+.glow-primary-sm {
+  box-shadow: 0 0 10px rgba(208, 0, 60, 0.08);
+}
+
+.glow-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.glow-card-hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+/* ============================================================
+   Card — Premium style
+   ============================================================ */
+
+.card-premium {
+  background: var(--color-card);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-premium:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 12px 28px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   Sidebar — Red gradient theme
+   ============================================================ */
+
+.sidebar-red {
+  background: linear-gradient(180deg, #D0003C 0%, #B80035 100%);
+}
+
+/* ============================================================
+   Noise Texture Overlay
+   ============================================================ */
+
+.noise-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   Gradient Border on Hover (cards)
+   ============================================================ */
+
+.gradient-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(208, 0, 60, 0.3), transparent 50%, rgba(208, 0, 60, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* ============================================================
+   Dot Pattern Background
+   ============================================================ */
+
+.dot-pattern {
+  background-image: radial-gradient(circle, rgba(208, 0, 60, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ============================================================
+   Sticky Header with Blur
+   ============================================================ */
+
+.header-blur {
+  background: rgba(250, 250, 250, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ============================================================
+   Status Dot with Glow
+   ============================================================ */
+
+.status-dot-active {
+  background-color: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.status-dot-inactive {
+  background-color: #9CA3AF;
+}
+
+/* ============================================================
+   KPI Icon Container
+   ============================================================ */
+
+.kpi-icon {
+  background: linear-gradient(135deg, rgba(208, 0, 60, 0.15), rgba(208, 0, 60, 0.05));
+  box-shadow: inset 0 0 0 1px rgba(208, 0, 60, 0.1);
+}
+
+/* ============================================================
+   Premium Input Focus
+   ============================================================ */
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(208, 0, 60, 0.4);
+  box-shadow: 0 0 0 3px rgba(208, 0, 60, 0.08);
+}
+
+/* ============================================================
+   Smooth Page Transition
+   ============================================================ */
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  opacity: 0;
+  animation: page-enter 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ============================================================
+   Table Row Hover
+   ============================================================ */
+
+.table-row-hover {
+  transition: background-color 0.15s ease;
+}
+
+.table-row-hover:hover {
+  background-color: rgba(208, 0, 60, 0.02);
+}
+
+/* ============================================================
+   Badge Pulse for Live Data
+   ============================================================ */
+
+@keyframes badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.badge-live::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10B981;
+  margin-right: 6px;
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK MODE — Premium dark theme inspired by Vision Plus
+   ═══════════════════════════════════════════════════════════════ */
+.dark {
+  --color-background: #0F0F0E;
+  --color-foreground: #F6F6F6;
+  --color-card: #1A1A19;
+  --color-card-foreground: #F6F6F6;
+  --color-popover: #1A1A19;
+  --color-popover-foreground: #F6F6F6;
+  --color-secondary: #2A2A28;
+  --color-secondary-foreground: #F6F6F6;
+  --color-muted: #2A2A28;
+  --color-muted-foreground: #8A8A8A;
+  --color-accent: #2A2A28;
+  --color-accent-foreground: #F6F6F6;
+  --color-border: rgba(208, 0, 60, 0.1);
+  --color-input: rgba(255, 255, 255, 0.1);
+  --color-ring: #D0003C;
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #FFFFFF;
+}
+
+/* ── Dark mode — Premium utilities ──────────────────────────── */
+
+.dark .card-premium {
+  background: #1A1A19;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.dark .card-premium:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 12px 28px rgba(0, 0, 0, 0.25);
+  border-color: rgba(208, 0, 60, 0.15);
+}
+
+.dark .header-blur {
+  background: rgba(15, 15, 14, 0.8);
+  backdrop-filter: blur(12px);
+}
+
+.dark .gradient-border::before {
+  background: linear-gradient(135deg, rgba(208, 0, 60, 0.4), transparent 50%, rgba(208, 0, 60, 0.15));
+}
+
+.dark .dot-pattern {
+  background-image: radial-gradient(circle, rgba(208, 0, 60, 0.04) 1px, transparent 1px);
+}
+
+.dark .glow-primary {
+  box-shadow: 0 0 20px rgba(208, 0, 60, 0.25), 0 0 40px rgba(208, 0, 60, 0.12);
+}
+.dark .glow-primary-sm {
+  box-shadow: 0 0 12px rgba(208, 0, 60, 0.15);
+}
+.dark .glow-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark .kpi-icon {
+  background: linear-gradient(135deg, rgba(208, 0, 60, 0.2), rgba(208, 0, 60, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(208, 0, 60, 0.15);
+}
+
+.dark .table-row-hover:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.dark input:focus, .dark select:focus, .dark textarea:focus {
+  border-color: rgba(208, 0, 60, 0.5);
+  box-shadow: 0 0 0 3px rgba(208, 0, 60, 0.15);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(208, 0, 60, 0.2);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(208, 0, 60, 0.35);
+}
+
+.dark * {
+  scrollbar-color: rgba(208, 0, 60, 0.2) transparent;
+}
+
+/* ── Sidebar dark mode — deepest black with red accents ─────── */
+.dark .sidebar-dark {
+  background: #070706;
+}
+.dark .sidebar-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+.dark .sidebar-wrapper > * {
+  position: relative;
+  z-index: 1;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(208, 0, 60, 0.15);
+  border-radius: 3px;
 }

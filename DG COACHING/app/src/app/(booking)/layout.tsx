@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function BookingLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="fr">
-			<body className="min-h-screen bg-white antialiased">
+			<body className="min-h-screen bg-background antialiased">
 				<ConvexProvider>
 					{children}
 					<Toaster position="top-center" richColors />

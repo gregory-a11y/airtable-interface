@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useSearchParams } from "next/navigation";
 import { formatEUR } from "@/lib/utils";
@@ -14,8 +14,10 @@ function PaymentContent() {
 	const offerId = searchParams.get("offer");
 
 	const data = useQuery(api.transactions.getByPIDPublic, pid ? { pid } : "skip");
+	const createCheckoutSession = useAction(api.stripe.createCheckoutSession);
 	const [selectedMethod, setSelectedMethod] = useState<"stripe" | "paypal">("stripe");
 	const [processing, setProcessing] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
 	if (!pid || !offerId) {
 		return <ErrorState message="Lien de paiement invalide" />;
@@ -24,7 +26,7 @@ function PaymentContent() {
 	if (data === undefined) {
 		return (
 			<div className="flex items-center justify-center py-20">
-				<Loader2 className="h-8 w-8 animate-spin text-[#D0003C]" />
+				<Loader2 className="h-8 w-8 animate-spin text-primary" />
 			</div>
 		);
 	}
@@ -39,8 +41,8 @@ function PaymentContent() {
 		return (
 			<div className="text-center">
 				<CheckCircle2 className="mx-auto h-16 w-16 text-emerald-500" />
-				<h2 className="mt-4 text-xl font-bold text-slate-800">Paiement confirme !</h2>
-				<p className="mt-2 text-sm text-slate-500">
+				<h2 className="mt-4 text-xl font-bold text-foreground">Paiement confirme !</h2>
+				<p className="mt-2 text-sm text-muted-foreground">
 					Bienvenue chez Prime Coaching. Vous recevrez un email de confirmation.
 				</p>
 			</div>
@@ -53,9 +55,28 @@ function PaymentContent() {
 
 	const handlePay = async () => {
 		setProcessing(true);
-		// In production: call Stripe Checkout or PayPal Orders API
-		// For now, show processing state
-		setTimeout(() => setProcessing(false), 3000);
+		setError(null);
+
+		if (selectedMethod === "stripe") {
+			try {
+				const baseUrl = window.location.origin;
+				const result = await createCheckoutSession({
+					pid: pid!,
+					successUrl: `${baseUrl}/pay`,
+					cancelUrl: `${baseUrl}/pay`,
+				});
+				if (result.url) {
+					window.location.href = result.url;
+				}
+			} catch (err) {
+				setError((err as Error).message || "Erreur lors de la creation du paiement");
+				setProcessing(false);
+			}
+		} else {
+			// PayPal integration requires PAYPAL_CLIENT_ID / PAYPAL_SECRET configuration
+			setError("PayPal sera disponible prochainement");
+			setProcessing(false);
+		}
 	};
 
 	const installmentLabel = offer?.installmentCount
@@ -65,21 +86,21 @@ function PaymentContent() {
 	return (
 		<div className="space-y-6">
 			{/* Offer summary */}
-			<div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-				<h2 className="text-lg font-bold text-slate-800">{offer?.name}</h2>
-				<div className="mt-2 text-3xl font-bold text-[#D0003C]">
+			<div className="rounded-xl border border-border bg-muted p-5">
+				<h2 className="text-lg font-bold text-foreground">{offer?.name}</h2>
+				<div className="mt-2 text-3xl font-bold text-primary">
 					{formatEUR(offer?.amount || 0)}
 				</div>
 				{installmentLabel && (
-					<p className="mt-1 text-sm text-slate-500">{installmentLabel}</p>
+					<p className="mt-1 text-sm text-muted-foreground">{installmentLabel}</p>
 				)}
 			</div>
 
 			{/* Payment method */}
 			<div className="space-y-3">
-				<p className="text-sm font-medium text-slate-700">Moyen de paiement</p>
+				<p className="text-sm font-medium text-foreground">Moyen de paiement</p>
 
-				<label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 p-4 transition-colors has-[:checked]:border-[#D0003C] has-[:checked]:bg-red-50/50">
+				<label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-border p-4 transition-colors has-[:checked]:border-primary has-[:checked]:bg-red-50/50">
 					<input
 						type="radio"
 						name="method"
@@ -88,16 +109,16 @@ function PaymentContent() {
 						onChange={() => setSelectedMethod("stripe")}
 						className="sr-only"
 					/>
-					<CreditCard className="h-5 w-5 text-slate-600" />
+					<CreditCard className="h-5 w-5 text-muted-foreground" />
 					<div className="flex-1">
-						<div className="text-sm font-medium text-slate-800">Carte bancaire</div>
-						<div className="text-xs text-slate-400">
+						<div className="text-sm font-medium text-foreground">Carte bancaire</div>
+						<div className="text-xs text-muted-foreground/70">
 							CB, Visa, Mastercard, Apple Pay, Google Pay
 						</div>
 					</div>
 				</label>
 
-				<label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-slate-200 p-4 transition-colors has-[:checked]:border-[#D0003C] has-[:checked]:bg-red-50/50">
+				<label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-border p-4 transition-colors has-[:checked]:border-primary has-[:checked]:bg-red-50/50">
 					<input
 						type="radio"
 						name="method"
@@ -108,8 +129,8 @@ function PaymentContent() {
 					/>
 					<Wallet className="h-5 w-5 text-blue-600" />
 					<div className="flex-1">
-						<div className="text-sm font-medium text-slate-800">PayPal</div>
-						<div className="text-xs text-slate-400">
+						<div className="text-sm font-medium text-foreground">PayPal</div>
+						<div className="text-xs text-muted-foreground/70">
 							Wallet PayPal — 4x sans frais si eligible
 						</div>
 					</div>
@@ -121,7 +142,7 @@ function PaymentContent() {
 				type="button"
 				onClick={handlePay}
 				disabled={processing}
-				className="w-full rounded-xl bg-[#D0003C] px-6 py-3.5 text-base font-bold text-white transition-colors hover:bg-[#B80035] disabled:opacity-50"
+				className="w-full rounded-xl bg-primary px-6 py-3.5 text-base font-bold text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
 			>
 				{processing ? (
 					<span className="flex items-center justify-center gap-2">
@@ -133,7 +154,11 @@ function PaymentContent() {
 				)}
 			</button>
 
-			<p className="text-center text-xs text-slate-400">
+			{error && (
+				<p className="text-center text-sm text-red-500">{error}</p>
+			)}
+
+			<p className="text-center text-xs text-muted-foreground/70">
 				Paiement securise. Vos donnees sont protegees.
 			</p>
 		</div>
@@ -144,15 +169,15 @@ function ErrorState({ message }: { message: string }) {
 	return (
 		<div className="text-center">
 			<XCircle className="mx-auto h-16 w-16 text-red-400" />
-			<h2 className="mt-4 text-lg font-bold text-slate-800">Erreur</h2>
-			<p className="mt-2 text-sm text-slate-500">{message}</p>
+			<h2 className="mt-4 text-lg font-bold text-foreground">Erreur</h2>
+			<p className="mt-2 text-sm text-muted-foreground">{message}</p>
 		</div>
 	);
 }
 
 export default function PayPage() {
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+		<div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted px-4">
 			<div className="w-full max-w-md">
 				<div className="mb-6 flex justify-center">
 					<Image
@@ -163,11 +188,11 @@ export default function PayPage() {
 						priority
 					/>
 				</div>
-				<div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+				<div className="rounded-2xl border border-border bg-white dark:bg-card p-6 shadow-sm">
 					<Suspense
 						fallback={
 							<div className="flex justify-center py-10">
-								<Loader2 className="h-8 w-8 animate-spin text-[#D0003C]" />
+								<Loader2 className="h-8 w-8 animate-spin text-primary" />
 							</div>
 						}
 					>

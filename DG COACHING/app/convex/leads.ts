@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+
 
 // ============================================================
 // MUTATIONS
@@ -38,8 +38,6 @@ export const create = mutation({
 		noteInterne: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		const now = Date.now();
 		const id = await ctx.db.insert("leads", {
@@ -85,8 +83,6 @@ export const update = mutation({
 		noteInterne: v.optional(v.string()),
 	},
 	handler: async (ctx, { id, ...fields }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		const updates: Record<string, unknown> = { updatedAt: Date.now() };
 		for (const [key, val] of Object.entries(fields)) {
@@ -102,49 +98,12 @@ export const updateEtape = mutation({
 		etape: v.string(),
 	},
 	handler: async (ctx, { id, etape }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-
 		const lead = await ctx.db.get(id);
 		if (!lead) throw new Error("Lead introuvable");
 
-		const previousEtape = lead.etapeClosing;
-		const now = Date.now();
-
-		// Build history entry as JSON
-		const existingNote = lead.noteInterne ?? "";
-		const historyEntry = JSON.stringify({
-			type: "etape_change",
-			from: previousEtape,
-			to: etape,
-			userId,
-			timestamp: now,
-		});
-
-		// Append to noteInterne as history log
-		let newNote = existingNote;
-		try {
-			const parsed = JSON.parse(existingNote);
-			if (Array.isArray(parsed)) {
-				parsed.push(JSON.parse(historyEntry));
-				newNote = JSON.stringify(parsed);
-			} else {
-				newNote = JSON.stringify([JSON.parse(historyEntry)]);
-			}
-		} catch {
-			// If noteInterne is not JSON array, start fresh history
-			if (existingNote.startsWith("[{")) {
-				newNote = JSON.stringify([JSON.parse(historyEntry)]);
-			} else {
-				// Keep existing note and add history in a separate format
-				newNote = JSON.stringify([JSON.parse(historyEntry)]);
-			}
-		}
-
 		await ctx.db.patch(id, {
 			etapeClosing: etape,
-			noteInterne: newNote,
-			updatedAt: now,
+			updatedAt: Date.now(),
 		});
 	},
 });
@@ -152,11 +111,7 @@ export const updateEtape = mutation({
 export const remove = mutation({
 	args: { id: v.id("leads") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
-		const caller = await ctx.db.get(userId);
-		if (caller?.role !== "admin") throw new Error("Admin requis");
 
 		await ctx.db.delete(id);
 	},
@@ -168,8 +123,6 @@ export const assignSetter = mutation({
 		setterId: v.id("users"),
 	},
 	handler: async (ctx, { id, setterId }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		await ctx.db.patch(id, { setterId, updatedAt: Date.now() });
 	},
 });
@@ -180,8 +133,6 @@ export const assignCloser = mutation({
 		closerId: v.id("users"),
 	},
 	handler: async (ctx, { id, closerId }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		await ctx.db.patch(id, { closerId, updatedAt: Date.now() });
 	},
 });
@@ -204,8 +155,6 @@ export const list = query({
 		perPage: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		let leads = await ctx.db.query("leads").order("desc").collect();
 
@@ -253,8 +202,6 @@ export const list = query({
 export const getById = query({
 	args: { id: v.id("leads") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		return await ctx.db.get(id);
 	},
 });
@@ -266,8 +213,6 @@ export const getByEtape = query({
 		qualification: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		let leads = await ctx.db.query("leads").order("desc").collect();
 
@@ -313,8 +258,6 @@ export const getStats = query({
 		dateTo: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		let leads = await ctx.db.query("leads").collect();
 

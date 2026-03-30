@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+
 
 function calculateDateFin(dateDebut: number, prestation: string): number | undefined {
 	if (!dateDebut) return undefined;
@@ -20,20 +20,11 @@ export const list = query({
 		search: v.optional(v.string()),
 	},
 	handler: async (ctx, { coachId, status, search }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-		const user = await ctx.db.get(userId);
-
 		let results;
 		if (coachId) {
 			results = await ctx.db
 				.query("clients")
 				.withIndex("by_coachId", (q) => q.eq("coachId", coachId))
-				.collect();
-		} else if (user?.role === "coach") {
-			results = await ctx.db
-				.query("clients")
-				.withIndex("by_coachId", (q) => q.eq("coachId", userId))
 				.collect();
 		} else {
 			results = await ctx.db.query("clients").order("desc").collect();
@@ -58,19 +49,8 @@ export const list = query({
 export const listGrouped = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-		const user = await ctx.db.get(userId);
 
-		let clients;
-		if (user?.role === "coach") {
-			clients = await ctx.db
-				.query("clients")
-				.withIndex("by_coachId", (q) => q.eq("coachId", userId))
-				.collect();
-		} else {
-			clients = await ctx.db.query("clients").collect();
-		}
+		const clients = await ctx.db.query("clients").collect();
 
 		// Fetch coaches
 		const coachIds = [...new Set(clients.map((c) => c.coachId).filter(Boolean))];
@@ -108,8 +88,6 @@ export const listGrouped = query({
 export const getById = query({
 	args: { id: v.id("clients") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		const client = await ctx.db.get(id);
 		if (!client) return null;
 
@@ -148,19 +126,8 @@ export const getById = query({
 export const getStats = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-		const user = await ctx.db.get(userId);
 
-		let clients;
-		if (user?.role === "coach") {
-			clients = await ctx.db
-				.query("clients")
-				.withIndex("by_coachId", (q) => q.eq("coachId", userId))
-				.collect();
-		} else {
-			clients = await ctx.db.query("clients").collect();
-		}
+		const clients = await ctx.db.query("clients").collect();
 
 		const now = Date.now();
 		const thirtyDays = 30 * 24 * 60 * 60 * 1000;
@@ -211,8 +178,6 @@ export const create = mutation({
 		dateDebut: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		const dateFinCalculee = args.dateDebut
 			? calculateDateFin(args.dateDebut, args.prestation)
@@ -229,7 +194,6 @@ export const create = mutation({
 			dateDebut: args.dateDebut,
 			dateFinCalculee,
 			dateFinReelle: dateFinCalculee,
-			dateClosing: Date.now(),
 			coachId: args.coachId,
 			leadId: args.leadId,
 			setterId: args.setterId,
@@ -274,8 +238,6 @@ export const update = mutation({
 		jourDuBilan: v.optional(v.string()),
 	},
 	handler: async (ctx, { id, ...fields }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		const client = await ctx.db.get(id);
 		if (!client) throw new Error("Client introuvable");
@@ -309,10 +271,7 @@ export const update = mutation({
 export const remove = mutation({
 	args: { id: v.id("clients") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-		const caller = await ctx.db.get(userId);
-		if (caller?.role !== "admin") throw new Error("Admin requis");
+		
 		await ctx.db.delete(id);
 	},
 });

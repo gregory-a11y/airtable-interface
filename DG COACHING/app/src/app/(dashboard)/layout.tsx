@@ -1,53 +1,131 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@/components/convex-provider";
 import { Sidebar } from "@/components/sidebar";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { Menu, LogOut, User } from "lucide-react";
+import { Menu, ChevronRight, Sun, Moon } from "lucide-react";
+
+const breadcrumbLabels: Record<string, string> = {
+	sales: "Sales / Closing",
+	dashboard: "Dashboard",
+	pipeline: "Pipeline Vente",
+	crm: "CRM",
+	calls: "Gestion des Calls",
+	"new-close": "New Close",
+	payments: "Suivi Paiements",
+	operationnel: "Operationnel",
+	clients: "Fiches Clients",
+	equipes: "Gestion Utilisateurs",
+};
+
+function Breadcrumbs() {
+	const pathname = usePathname();
+	const segments = pathname.split("/").filter(Boolean);
+
+	if (segments.length === 0) return null;
+
+	return (
+		<div className="flex items-center gap-1.5 text-sm">
+			{segments.map((segment, i) => {
+				const isLast = i === segments.length - 1;
+				const label =
+					breadcrumbLabels[segment] ||
+					segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
+				return (
+					<span key={segment} className="flex items-center gap-1.5">
+						{i > 0 && <ChevronRight size={12} className="text-muted-foreground/40" />}
+						<span className={isLast ? "font-medium text-foreground" : "text-muted-foreground"}>
+							{label}
+						</span>
+					</span>
+				);
+			})}
+		</div>
+	);
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-	const user = useQuery(api.users.currentUser);
+	const { user, signOut, isLoading } = useAuth();
 	const router = useRouter();
-	const { signOut } = useAuthActions();
 	const [sidebarOpen, setSidebarOpen] = useState(false);
+	const [collapsed, setCollapsed] = useState(false);
+	const [isDark, setIsDark] = useState(true);
 
 	useEffect(() => {
-		if (user === null) {
-			router.replace("/login");
+		const stored = localStorage.getItem("theme");
+		const dark = stored !== "light";
+		setIsDark(dark);
+		// Sync class in case inline script missed or SSR mismatch
+		if (dark) {
+			document.documentElement.classList.add("dark");
+		} else {
+			document.documentElement.classList.remove("dark");
 		}
-	}, [user, router]);
+	}, []);
 
-	if (user === undefined) {
+	const toggleTheme = () => {
+		const next = !isDark;
+		setIsDark(next);
+		if (next) {
+			document.documentElement.classList.add("dark");
+			localStorage.setItem("theme", "dark");
+		} else {
+			document.documentElement.classList.remove("dark");
+			localStorage.setItem("theme", "light");
+		}
+	};
+
+	useEffect(() => {
+		if (!isLoading && !user) {
+			router.replace("/login");
+		} else if (user?.mustChangePassword) {
+			router.replace("/change-password");
+		}
+	}, [user, isLoading, router]);
+
+	if (isLoading || user === undefined) {
 		return (
-			<div className="flex h-screen items-center justify-center bg-slate-50">
-				<div className="h-8 w-8 animate-spin rounded-full border-4 border-[#D0003C] border-t-transparent" />
+			<div className="flex h-screen items-center justify-center bg-background">
+				<div className="flex flex-col items-center gap-3">
+					<div className="h-8 w-8 animate-spin rounded-full border-[3px] border-primary/20 border-t-primary" />
+					<span className="text-xs text-muted-foreground">Chargement...</span>
+				</div>
 			</div>
 		);
 	}
 
-	if (user === null) return null;
+	if (!user) return null;
+
+	const handleLogout = async () => {
+		await signOut();
+		router.replace("/login");
+	};
 
 	return (
-		<div className="flex h-screen overflow-hidden">
+		<div className="flex h-screen overflow-hidden bg-background">
 			{/* Desktop sidebar */}
-			<div className="hidden lg:flex">
-				<Sidebar userRole={user.role} />
+			<div className="hidden lg:block">
+				<Sidebar
+					userRole={user.role}
+					userName={user.name}
+					collapsed={collapsed}
+					onToggleCollapse={() => setCollapsed(!collapsed)}
+					onLogout={handleLogout}
+				/>
 			</div>
 
 			{/* Mobile sidebar overlay */}
 			{sidebarOpen && (
 				<div className="fixed inset-0 z-50 lg:hidden">
 					<div
-						className="absolute inset-0 bg-black/50"
+						className="absolute inset-0 bg-black/60 backdrop-blur-sm"
 						onClick={() => setSidebarOpen(false)}
 						onKeyDown={() => {}}
 						role="presentation"
 					/>
-					<div className="relative h-full w-64">
-						<Sidebar userRole={user.role} onClose={() => setSidebarOpen(false)} />
+					<div className="relative h-full w-64 shadow-2xl">
+						<Sidebar userRole={user.role} userName={user.name} onClose={() => setSidebarOpen(false)} onLogout={handleLogout} />
 					</div>
 				</div>
 			)}
@@ -55,38 +133,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 			{/* Main content */}
 			<div className="flex flex-1 flex-col overflow-hidden">
 				{/* Header */}
-				<header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6">
+				<header className="header-blur flex h-16 shrink-0 items-center gap-3 border-b border-border/40 bg-card/80 backdrop-blur-md dark:bg-[#0F0F0E]/80 px-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] lg:px-6">
+					{/* Left: mobile menu */}
 					<button
 						type="button"
 						onClick={() => setSidebarOpen(true)}
-						className="lg:hidden"
+						className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
 					>
-						<Menu size={22} className="text-slate-600" />
+						<Menu size={20} />
 					</button>
 
+					{/* Breadcrumbs */}
+					<div className="hidden lg:block">
+						<Breadcrumbs />
+					</div>
+
+					{/* Spacer */}
 					<div className="flex-1" />
 
-					<div className="flex items-center gap-3">
-						<div className="text-right">
-							<div className="text-sm font-medium text-slate-800">{user.name}</div>
-							<div className="text-[11px] capitalize text-slate-400">{user.role}</div>
-						</div>
-						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D0003C] text-xs font-bold text-white">
-							{user.name?.charAt(0).toUpperCase() || <User size={14} />}
-						</div>
-						<button
-							type="button"
-							onClick={() => signOut().then(() => router.replace("/login"))}
-							className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-							title="Deconnexion"
-						>
-							<LogOut size={18} />
-						</button>
-					</div>
+					{/* Right: dark mode toggle */}
+					<button
+						type="button"
+						onClick={toggleTheme}
+						className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+						title={isDark ? "Mode clair" : "Mode sombre"}
+					>
+						{isDark ? <Sun size={17} /> : <Moon size={17} />}
+					</button>
 				</header>
 
 				{/* Page content */}
-				<main className="flex-1 overflow-y-auto bg-slate-50 p-4 lg:p-6">{children}</main>
+				<main className="dot-pattern flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
 			</div>
 		</div>
 	);

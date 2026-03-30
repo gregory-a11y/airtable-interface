@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import type { Id } from "./_generated/dataModel";
+
 
 // ============================================================
 // HELPERS
@@ -38,8 +39,6 @@ export const list = query({
 		status: v.optional(v.string()),
 	},
 	handler: async (ctx, { hostId, status }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		let results;
 		if (hostId) {
@@ -63,8 +62,6 @@ export const list = query({
 export const getById = query({
 	args: { id: v.id("bookings") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		return await ctx.db.get(id);
 	},
 });
@@ -72,8 +69,6 @@ export const getById = query({
 export const getToday = query({
 	args: { hostId: v.optional(v.id("users")) },
 	handler: async (ctx, { hostId }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		const now = Date.now();
 		const dayStart = getStartOfDay(now);
@@ -103,8 +98,6 @@ export const getToday = query({
 export const getUpcoming = query({
 	args: { hostId: v.optional(v.id("users")) },
 	handler: async (ctx, { hostId }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		const now = Date.now();
 
@@ -349,7 +342,7 @@ export const create = mutation({
 			priorityGroups.set(host.priority, group);
 		}
 
-		let selectedHostId: string | null = null;
+		let selectedHostId: Id<"users"> | null = null;
 
 		for (const priority of ["high", "medium", "low"]) {
 			const group = priorityGroups.get(priority);
@@ -381,7 +374,7 @@ export const create = mutation({
 
 					return { userId: host.userId, weekCount: hostWeekCount };
 				})
-				.filter(Boolean) as { userId: string; weekCount: number }[];
+				.filter(Boolean) as { userId: Id<"users">; weekCount: number }[];
 
 			if (candidates.length === 0) continue;
 
@@ -400,7 +393,7 @@ export const create = mutation({
 		// Create booking
 		const bookingId = await ctx.db.insert("bookings", {
 			calendarId: args.calendarId,
-			hostId: selectedHostId as any,
+			hostId: selectedHostId!,
 			prospectName,
 			prospectEmail: args.prospectEmail,
 			prospectFirstName: args.prospectFirstName,
@@ -447,7 +440,6 @@ export const create = mutation({
 				dateBookingCall: args.startTime,
 				bookingId,
 				calendarSlug: calendar.slug,
-				closerId: selectedHostId as any,
 				createdAt: Date.now(),
 				updatedAt: Date.now(),
 			});
@@ -465,8 +457,6 @@ export const create = mutation({
 export const cancel = mutation({
 	args: { id: v.id("bookings") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		await ctx.db.patch(id, { status: "cancelled", updatedAt: Date.now() });
 	},
 });
@@ -474,8 +464,6 @@ export const cancel = mutation({
 export const markNoShow = mutation({
 	args: { id: v.id("bookings") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		await ctx.db.patch(id, { status: "no_show", updatedAt: Date.now() });
 
@@ -493,8 +481,6 @@ export const markNoShow = mutation({
 export const markCompleted = mutation({
 	args: { id: v.id("bookings") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		await ctx.db.patch(id, { status: "completed", updatedAt: Date.now() });
 

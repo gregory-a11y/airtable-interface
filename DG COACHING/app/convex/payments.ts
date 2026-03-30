@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+
 
 export const list = query({
 	args: {
@@ -8,8 +8,6 @@ export const list = query({
 		clientId: v.optional(v.id("clients")),
 	},
 	handler: async (ctx, { status, clientId }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		let results;
 		if (clientId) {
@@ -45,8 +43,6 @@ export const getByClient = query({
 export const getStats = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 
 		const allPayments = await ctx.db.query("payments").collect();
 		const confirmed = allPayments.filter((p) => p.status === "confirmed");
@@ -88,9 +84,63 @@ export const getStats = query({
 	},
 });
 
+export const getCommissionsByUser = query({
+	args: {},
+	handler: async (ctx) => {
+		const confirmed = await ctx.db
+			.query("payments")
+			.withIndex("by_status", (q) => q.eq("status", "confirmed"))
+			.collect();
+
+		const userMap: Record<
+			string,
+			{ name: string; role: string; totalClosing: number; totalSetting: number; count: number }
+		> = {};
+
+		for (const p of confirmed) {
+			if (p.closerId && (p.commissionClosing ?? 0) > 0) {
+				if (!userMap[p.closerId]) {
+					const user = await ctx.db.get(p.closerId);
+					userMap[p.closerId] = {
+						name: user?.name ?? user?.email ?? "Inconnu",
+						role: "closer",
+						totalClosing: 0,
+						totalSetting: 0,
+						count: 0,
+					};
+				}
+				userMap[p.closerId].totalClosing += p.commissionClosing!;
+				userMap[p.closerId].count += 1;
+			}
+
+			if (p.setterId && (p.commissionSetting ?? 0) > 0) {
+				if (!userMap[p.setterId]) {
+					const user = await ctx.db.get(p.setterId);
+					userMap[p.setterId] = {
+						name: user?.name ?? user?.email ?? "Inconnu",
+						role: "setter",
+						totalClosing: 0,
+						totalSetting: 0,
+						count: 0,
+					};
+				}
+				userMap[p.setterId].totalSetting += p.commissionSetting!;
+				userMap[p.setterId].count += 1;
+			}
+		}
+
+		return Object.entries(userMap).map(([userId, data]) => ({
+			userId,
+			...data,
+			total: data.totalClosing + data.totalSetting,
+		}));
+	},
+});
+
 export const createManual = mutation({
 	args: {
 		clientId: v.id("clients"),
+		offerId: v.id("offers"),
 		amount: v.number(),
 		provider: v.string(),
 		status: v.union(
@@ -101,15 +151,40 @@ export const createManual = mutation({
 		installmentNumber: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
+		if (args.amount <= 0) throw new Error("Le montant doit etre positif");
 
 		const client = await ctx.db.get(args.clientId);
 		if (!client) throw new Error("Client introuvable");
 
+		const offer = await ctx.db.get(args.offerId);
+		if (!offer) throw new Error("Offre introuvable");
+
+		const pid = `manual-${crypto.randomUUID().slice(0, 6)}`;
+		const now = Date.now();
+
+		const transactionId = await ctx.db.insert("transactions", {
+			pid,
+			offerId: args.offerId,
+			prospectName: client.name,
+			prospectEmail: client.email,
+			clientId: args.clientId,
+			provider: args.provider,
+			status: args.status === "confirmed" ? "completed" : "pending",
+			createdAt: now,
+			confirmedAt: args.status === "confirmed" ? now : undefined,
+		});
+
+		// Calculate commissions from client percentages
+		const commissionClosing = client.commissionPercentCloser
+			? Math.round(args.amount * (client.commissionPercentCloser / 100))
+			: undefined;
+		const commissionSetting = client.commissionPercentSetter
+			? Math.round(args.amount * (client.commissionPercentSetter / 100))
+			: undefined;
+
 		return await ctx.db.insert("payments", {
-			transactionId: "" as any,
-			pid: `manual-${crypto.randomUUID().slice(0, 6)}`,
+			transactionId,
+			pid,
 			amount: args.amount,
 			amountHT: Math.round(args.amount * 0.8),
 			provider: args.provider,
@@ -118,9 +193,11 @@ export const createManual = mutation({
 			clientId: args.clientId,
 			closerId: client.closerId,
 			setterId: client.setterId,
+			commissionClosing,
+			commissionSetting,
 			installmentNumber: args.installmentNumber,
-			confirmedAt: args.status === "confirmed" ? Date.now() : undefined,
-			createdAt: Date.now(),
+			confirmedAt: args.status === "confirmed" ? now : undefined,
+			createdAt: now,
 		});
 	},
 });

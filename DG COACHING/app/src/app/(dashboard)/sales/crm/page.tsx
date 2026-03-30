@@ -7,38 +7,58 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Search,
-	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
 	Users,
 	Download,
-	Plus,
+	Loader2,
+	UserPlus,
+	Filter,
+	CalendarDays,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
-const ETAPE_LABELS: Record<string, { label: string; color: string }> = {
-	appel_a_venir: { label: "Appel a venir", color: "bg-blue-100 text-blue-700" },
-	appel_du_jour: { label: "Appel du jour", color: "bg-amber-100 text-amber-700" },
-	follow_up: { label: "Follow up", color: "bg-violet-100 text-violet-700" },
-	no_show: { label: "No show", color: "bg-orange-100 text-orange-700" },
-	en_attente: { label: "En attente", color: "bg-slate-100 text-slate-700" },
-	close: { label: "Close", color: "bg-emerald-100 text-emerald-700" },
-	perdu: { label: "Perdu", color: "bg-red-100 text-red-700" },
+const ETAPE_LABELS: Record<string, { label: string; color: string; border: string }> = {
+	appel_a_venir: { label: "Appel a venir", color: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400", border: "border border-blue-200 dark:border-blue-500/20" },
+	appel_du_jour: { label: "Appel du jour", color: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400", border: "border border-amber-200 dark:border-amber-500/20" },
+	follow_up: { label: "Follow up", color: "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400", border: "border border-violet-200 dark:border-violet-500/20" },
+	no_show: { label: "No show", color: "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400", border: "border border-orange-200 dark:border-orange-500/20" },
+	en_attente: { label: "En attente", color: "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400", border: "border border-gray-200 dark:border-gray-500/20" },
+	close: { label: "Close", color: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400", border: "border border-emerald-200 dark:border-emerald-500/20" },
+	perdu: { label: "Perdu", color: "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400", border: "border border-red-200 dark:border-red-500/20" },
 };
 
 const SOURCE_COLORS: Record<string, string> = {
-	instagram: "bg-pink-100 text-pink-700",
-	facebook: "bg-blue-100 text-blue-700",
-	tiktok: "bg-slate-100 text-slate-700",
-	google: "bg-green-100 text-green-700",
-	referral: "bg-amber-100 text-amber-700",
-	organique: "bg-emerald-100 text-emerald-700",
-	autre: "bg-gray-100 text-gray-600",
+	instagram: "bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-500/20",
+	facebook: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20",
+	tiktok: "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
+	google: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/20",
+	referral: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
+	organique: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
+	autre: "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20",
 };
 
 const QUAL_COLORS: Record<string, string> = {
-	qualifie: "bg-emerald-100 text-emerald-700",
-	non_qualifie: "bg-red-100 text-red-700",
-	pending: "bg-amber-100 text-amber-700",
+	qualifie: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20",
+	non_qualifie: "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20",
+	pending: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -66,11 +86,11 @@ function formatDate(ts: number): string {
 export default function CrmListPage() {
 	const router = useRouter();
 	const [search, setSearch] = useState("");
-	const [etapeFilter, setEtapeFilter] = useState("");
-	const [sourceFilter, setSourceFilter] = useState("");
-	const [qualFilter, setQualFilter] = useState("");
-	const [setterFilter, setSetterFilter] = useState("");
-	const [closerFilter, setCloserFilter] = useState("");
+	const [etapeFilter, setEtapeFilter] = useState("all");
+	const [sourceFilter, setSourceFilter] = useState("all");
+	const [qualFilter, setQualFilter] = useState("all");
+	const [setterFilter, setSetterFilter] = useState("all");
+	const [closerFilter, setCloserFilter] = useState("all");
 	const [dateFrom, setDateFrom] = useState("");
 	const [dateTo, setDateTo] = useState("");
 	const [page, setPage] = useState(0);
@@ -81,25 +101,25 @@ export default function CrmListPage() {
 		[team],
 	);
 
-	const queryArgs = useMemo(() => {
-		const args: Record<string, unknown> = { page, perPage: 20 };
-		if (search) args.search = search;
-		if (etapeFilter) args.etape = etapeFilter;
-		if (sourceFilter) args.source = sourceFilter;
-		if (qualFilter) args.qualification = qualFilter;
-		if (setterFilter) args.setterId = setterFilter;
-		if (closerFilter) args.closerId = closerFilter;
-		if (dateFrom) args.dateFrom = new Date(dateFrom).getTime();
-		if (dateTo) args.dateTo = new Date(dateTo).setHours(23, 59, 59, 999);
-		return args;
-	}, [search, etapeFilter, sourceFilter, qualFilter, setterFilter, closerFilter, dateFrom, dateTo, page]);
+	const queryArgs = useMemo(() => ({
+		page,
+		perPage: 20 as const,
+		search: search || undefined,
+		etape: etapeFilter !== "all" ? etapeFilter : undefined,
+		source: sourceFilter !== "all" ? sourceFilter : undefined,
+		qualification: qualFilter !== "all" ? qualFilter : undefined,
+		setterId: setterFilter !== "all" ? (setterFilter as Id<"users">) : undefined,
+		closerId: closerFilter !== "all" ? (closerFilter as Id<"users">) : undefined,
+		dateFrom: dateFrom ? new Date(dateFrom).getTime() : undefined,
+		dateTo: dateTo ? new Date(dateTo).setHours(23, 59, 59, 999) : undefined,
+	}), [search, etapeFilter, sourceFilter, qualFilter, setterFilter, closerFilter, dateFrom, dateTo, page]);
 
-	const result = useQuery(api.leads.list, queryArgs as any);
+	const result = useQuery(api.leads.list, queryArgs);
 
 	const userMap = useMemo(() => {
 		const m: Record<string, string> = {};
 		for (const u of team ?? []) {
-			m[u._id] = u.name ?? u.email ?? "—";
+			m[u._id] = u.name ?? u.email ?? "--";
 		}
 		return m;
 	}, [team]);
@@ -146,35 +166,39 @@ export default function CrmListPage() {
 	const totalPages = result ? Math.ceil(result.total / (result.perPage || 20)) : 0;
 
 	return (
-		<div className="space-y-4">
+		<div className="mx-auto max-w-7xl space-y-5 animate-fade-in">
 			{/* Header */}
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-slate-900">CRM</h1>
-					<p className="text-sm text-slate-500">
-						{result?.total ?? 0} lead{(result?.total ?? 0) > 1 ? "s" : ""}
+					<h1 className="text-2xl font-bold tracking-tight text-foreground">CRM</h1>
+					<p className="mt-0.5 text-sm text-muted-foreground">
+						{result?.total ?? 0} lead{(result?.total ?? 0) > 1 ? "s" : ""} au total
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
-					<button
-						type="button"
+					<Button
+						variant="outline"
 						onClick={handleExportCSV}
-						className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+						className="rounded-xl h-10 gap-2"
 					>
 						<Download size={14} />
 						Export CSV
-					</button>
+					</Button>
+					<Button className="rounded-xl h-10 gap-2">
+						<UserPlus size={14} />
+						Ajouter un lead
+					</Button>
 				</div>
 			</div>
 
 			{/* Filter Bar */}
-			<div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
+			<div className="flex flex-wrap items-center gap-3">
 				<div className="relative flex-1 sm:max-w-xs">
 					<Search
-						size={16}
-						className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+						size={15}
+						className="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-muted-foreground"
 					/>
-					<input
+					<Input
 						type="text"
 						placeholder="Nom, email, telephone..."
 						value={search}
@@ -182,235 +206,233 @@ export default function CrmListPage() {
 							setSearch(e.target.value);
 							setPage(0);
 						}}
-						className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
+						className="pl-9 rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10 h-10"
 					/>
 				</div>
 
-				<FilterSelect
-					value={etapeFilter}
-					onChange={(v) => {
-						setEtapeFilter(v);
-						setPage(0);
-					}}
-					placeholder="Etape"
-					options={Object.entries(ETAPE_LABELS).map(([k, v]) => ({ value: k, label: v.label }))}
-				/>
+				<Select value={etapeFilter} onValueChange={(v) => { setEtapeFilter(v); setPage(0); }}>
+					<SelectTrigger className="w-[140px] rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10 h-10">
+						<SelectValue placeholder="Etape" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">Etape</SelectItem>
+						{Object.entries(ETAPE_LABELS).map(([k, v]) => (
+							<SelectItem key={k} value={k}>{v.label}</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
-				<FilterSelect
-					value={sourceFilter}
-					onChange={(v) => {
-						setSourceFilter(v);
-						setPage(0);
-					}}
-					placeholder="Source"
-					options={[
-						{ value: "instagram", label: "Instagram" },
-						{ value: "facebook", label: "Facebook" },
-						{ value: "tiktok", label: "TikTok" },
-						{ value: "google", label: "Google" },
-						{ value: "referral", label: "Referral" },
-						{ value: "organique", label: "Organique" },
-						{ value: "autre", label: "Autre" },
-					]}
-				/>
+				<Select value={sourceFilter} onValueChange={(v) => { setSourceFilter(v); setPage(0); }}>
+					<SelectTrigger className="w-[140px] rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10 h-10">
+						<SelectValue placeholder="Source" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">Source</SelectItem>
+						<SelectItem value="instagram">Instagram</SelectItem>
+						<SelectItem value="facebook">Facebook</SelectItem>
+						<SelectItem value="tiktok">TikTok</SelectItem>
+						<SelectItem value="google">Google</SelectItem>
+						<SelectItem value="referral">Referral</SelectItem>
+						<SelectItem value="organique">Organique</SelectItem>
+						<SelectItem value="autre">Autre</SelectItem>
+					</SelectContent>
+				</Select>
 
-				<FilterSelect
-					value={qualFilter}
-					onChange={(v) => {
-						setQualFilter(v);
-						setPage(0);
-					}}
-					placeholder="Qualification"
-					options={[
-						{ value: "qualifie", label: "Qualifie" },
-						{ value: "non_qualifie", label: "Non qualifie" },
-						{ value: "pending", label: "Pending" },
-					]}
-				/>
+				<Select value={qualFilter} onValueChange={(v) => { setQualFilter(v); setPage(0); }}>
+					<SelectTrigger className="w-[155px] rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10 h-10">
+						<SelectValue placeholder="Qualification" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">Qualification</SelectItem>
+						<SelectItem value="qualifie">Qualifie</SelectItem>
+						<SelectItem value="non_qualifie">Non qualifie</SelectItem>
+						<SelectItem value="pending">Pending</SelectItem>
+					</SelectContent>
+				</Select>
 
-				<FilterSelect
-					value={setterFilter}
-					onChange={(v) => {
-						setSetterFilter(v);
-						setPage(0);
-					}}
-					placeholder="Setter"
-					options={salesTeam.map((u) => ({ value: u._id, label: u.name ?? u.email ?? "—" }))}
-				/>
+				<Select value={setterFilter} onValueChange={(v) => { setSetterFilter(v); setPage(0); }}>
+					<SelectTrigger className="w-[130px] rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10 h-10">
+						<SelectValue placeholder="Setter" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">Setter</SelectItem>
+						{salesTeam.map((u) => (
+							<SelectItem key={u._id} value={u._id}>{u.name ?? u.email ?? "--"}</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
-				<FilterSelect
-					value={closerFilter}
-					onChange={(v) => {
-						setCloserFilter(v);
-						setPage(0);
-					}}
-					placeholder="Closer"
-					options={salesTeam.map((u) => ({ value: u._id, label: u.name ?? u.email ?? "—" }))}
-				/>
+				<Select value={closerFilter} onValueChange={(v) => { setCloserFilter(v); setPage(0); }}>
+					<SelectTrigger className="w-[130px] rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10 h-10">
+						<SelectValue placeholder="Closer" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">Closer</SelectItem>
+						{salesTeam.map((u) => (
+							<SelectItem key={u._id} value={u._id}>{u.name ?? u.email ?? "--"}</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
-				<input
-					type="date"
-					value={dateFrom}
-					onChange={(e) => {
-						setDateFrom(e.target.value);
-						setPage(0);
-					}}
-					className="rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-700 focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
-				/>
-				<input
-					type="date"
-					value={dateTo}
-					onChange={(e) => {
-						setDateTo(e.target.value);
-						setPage(0);
-					}}
-					className="rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-700 focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
-				/>
+				<div className="relative">
+					<CalendarDays size={14} className="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+					<Input
+						type="date"
+						value={dateFrom}
+						onChange={(e) => { setDateFrom(e.target.value); setPage(0); }}
+						className="w-[150px] pl-9 rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10 h-10"
+					/>
+				</div>
+				<div className="relative">
+					<CalendarDays size={14} className="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+					<Input
+						type="date"
+						value={dateTo}
+						onChange={(e) => { setDateTo(e.target.value); setPage(0); }}
+						className="w-[150px] pl-9 rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10 h-10"
+					/>
+				</div>
 			</div>
 
 			{/* Table */}
-			<div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+			<div className="card-premium overflow-hidden">
 				{result === undefined ? (
 					<div className="flex h-48 items-center justify-center">
-						<div className="h-8 w-8 animate-spin rounded-full border-4 border-[#D0003C] border-t-transparent" />
+						<Loader2 className="h-8 w-8 animate-spin text-primary" />
 					</div>
 				) : result.leads.length === 0 ? (
-					<div className="flex flex-col items-center justify-center py-16">
-						<Users size={48} className="mb-3 text-slate-300" />
-						<p className="text-base font-medium text-slate-500">Aucun lead</p>
-						<p className="text-sm text-slate-400">Ajustez vos filtres ou creez un nouveau lead.</p>
+					<div className="flex flex-col items-center justify-center py-20">
+						<div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 mb-4">
+							<Users size={28} className="text-muted-foreground/40" />
+						</div>
+						<p className="text-base font-medium text-foreground">Aucun lead trouve</p>
+						<p className="mt-1 text-sm text-muted-foreground">Ajustez vos filtres ou creez un nouveau lead.</p>
 					</div>
 				) : (
 					<div className="overflow-x-auto">
-						<table className="w-full text-left text-sm">
-							<thead>
-								<tr className="border-b border-slate-100 bg-slate-50">
-									<th className="px-4 py-3 font-medium text-slate-600">Contact</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Email</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Tel</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Source</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Type</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Qualif.</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Etape</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Setter</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Closer</th>
-									<th className="px-4 py-3 font-medium text-slate-600">Date</th>
-									<th className="px-4 py-3 text-right font-medium text-slate-600">Montant</th>
-								</tr>
-							</thead>
-							<tbody>
+						<Table>
+							<TableHeader>
+								<TableRow className="bg-muted/30 border-b border-border/30 hover:bg-muted/30">
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Contact</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Email</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Tel</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Source</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Type</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Qualif.</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Etape</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Setter</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Closer</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date</TableHead>
+									<TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground text-right">Montant</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
 								{result.leads.map((lead) => (
-									<tr
+									<TableRow
 										key={lead._id}
 										onClick={() => router.push(`/sales/crm/${lead._id}`)}
-										className="cursor-pointer border-b border-slate-50 transition-colors hover:bg-slate-50"
+										className="table-row-hover cursor-pointer border-b border-border/30"
 									>
-										<td className="px-4 py-3 font-medium text-slate-800">{lead.name}</td>
-										<td className="px-4 py-3 text-slate-500">{lead.email ?? "—"}</td>
-										<td className="px-4 py-3 text-slate-500">{lead.phone ?? "—"}</td>
-										<td className="px-4 py-3">
-											<span
-												className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${SOURCE_COLORS[lead.source.toLowerCase()] ?? "bg-gray-100 text-gray-600"}`}
-											>
+										<TableCell className="py-3 px-4">
+											<span className="font-medium text-foreground hover:text-primary transition-colors">
+												{lead.name}
+											</span>
+										</TableCell>
+										<TableCell className="py-3 px-4 text-sm text-muted-foreground">{lead.email ?? "--"}</TableCell>
+										<TableCell className="py-3 px-4 text-sm text-muted-foreground">{lead.phone ?? "--"}</TableCell>
+										<TableCell className="py-3 px-4">
+											<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${SOURCE_COLORS[lead.source.toLowerCase()] ?? "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20"}`}>
 												{lead.source}
 											</span>
-										</td>
-										<td className="px-4 py-3 text-slate-500">
+										</TableCell>
+										<TableCell className="py-3 px-4 text-sm text-muted-foreground">
 											{TYPE_LABELS[lead.type] ?? lead.type}
-										</td>
-										<td className="px-4 py-3">
-											<span
-												className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${QUAL_COLORS[lead.qualification] ?? "bg-gray-100 text-gray-600"}`}
-											>
+										</TableCell>
+										<TableCell className="py-3 px-4">
+											<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${QUAL_COLORS[lead.qualification] ?? "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-500/20"}`}>
 												{lead.qualification}
 											</span>
-										</td>
-										<td className="px-4 py-3">
-											<span
-												className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${ETAPE_LABELS[lead.etapeClosing]?.color ?? "bg-gray-100 text-gray-600"}`}
-											>
+										</TableCell>
+										<TableCell className="py-3 px-4">
+											<span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${ETAPE_LABELS[lead.etapeClosing]?.color ?? "bg-gray-50 dark:bg-gray-500/10 text-gray-600 dark:text-gray-400"} ${ETAPE_LABELS[lead.etapeClosing]?.border ?? "border border-gray-200 dark:border-gray-500/20"}`}>
 												{ETAPE_LABELS[lead.etapeClosing]?.label ?? lead.etapeClosing}
 											</span>
-										</td>
-										<td className="px-4 py-3 text-slate-500">
-											{lead.setterId ? (userMap[lead.setterId] ?? "—") : "—"}
-										</td>
-										<td className="px-4 py-3 text-slate-500">
-											{lead.closerId ? (userMap[lead.closerId] ?? "—") : "—"}
-										</td>
-										<td className="px-4 py-3 text-slate-500">{formatDate(lead.createdAt)}</td>
-										<td className="px-4 py-3 text-right font-medium text-slate-800">
-											{lead.montantContracte ? formatEUR(lead.montantContracte) : "—"}
-										</td>
-									</tr>
+										</TableCell>
+										<TableCell className="py-3 px-4 text-sm text-muted-foreground">
+											{lead.setterId ? (userMap[lead.setterId] ?? "--") : "--"}
+										</TableCell>
+										<TableCell className="py-3 px-4 text-sm text-muted-foreground">
+											{lead.closerId ? (userMap[lead.closerId] ?? "--") : "--"}
+										</TableCell>
+										<TableCell className="py-3 px-4 text-xs text-muted-foreground">{formatDate(lead.createdAt)}</TableCell>
+										<TableCell className="py-3 px-4 text-right">
+											{lead.montantContracte ? (
+												<span className="font-semibold text-primary">{formatEUR(lead.montantContracte)}</span>
+											) : (
+												<span className="text-muted-foreground">--</span>
+											)}
+										</TableCell>
+									</TableRow>
 								))}
-							</tbody>
-						</table>
+							</TableBody>
+						</Table>
 					</div>
 				)}
 
 				{/* Pagination */}
 				{result && result.total > (result.perPage || 20) && (
-					<div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-						<p className="text-sm text-slate-500">
-							Page {page + 1} sur {totalPages} — {result.total} resultats
+					<div className="flex items-center justify-between border-t border-border/30 px-5 py-3">
+						<p className="text-sm text-muted-foreground">
+							Page {page + 1} sur {totalPages} -- {result.total} resultats
 						</p>
-						<div className="flex items-center gap-2">
-							<button
-								type="button"
+						<div className="flex items-center gap-1.5">
+							<Button
+								variant="outline"
+								size="sm"
 								onClick={() => setPage((p) => Math.max(0, p - 1))}
 								disabled={page === 0}
-								className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+								className="rounded-lg h-8 gap-1"
 							>
 								<ChevronLeft size={14} />
 								Precedent
-							</button>
-							<button
-								type="button"
+							</Button>
+							{Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+								let pageNum: number;
+								if (totalPages <= 5) {
+									pageNum = i;
+								} else if (page < 3) {
+									pageNum = i;
+								} else if (page > totalPages - 4) {
+									pageNum = totalPages - 5 + i;
+								} else {
+									pageNum = page - 2 + i;
+								}
+								return (
+									<Button
+										key={pageNum}
+										variant={page === pageNum ? "default" : "outline"}
+										size="sm"
+										onClick={() => setPage(pageNum)}
+										className="rounded-lg h-8 w-8 p-0"
+									>
+										{pageNum + 1}
+									</Button>
+								);
+							})}
+							<Button
+								variant="outline"
+								size="sm"
 								onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
 								disabled={page >= totalPages - 1}
-								className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+								className="rounded-lg h-8 gap-1"
 							>
 								Suivant
 								<ChevronRight size={14} />
-							</button>
+							</Button>
 						</div>
 					</div>
 				)}
 			</div>
-		</div>
-	);
-}
-
-function FilterSelect({
-	value,
-	onChange,
-	placeholder,
-	options,
-}: {
-	value: string;
-	onChange: (v: string) => void;
-	placeholder: string;
-	options: { value: string; label: string }[];
-}) {
-	return (
-		<div className="relative">
-			<select
-				value={value}
-				onChange={(e) => onChange(e.target.value)}
-				className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-7 pl-2.5 text-sm text-slate-700 focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
-			>
-				<option value="">{placeholder}</option>
-				{options.map((o) => (
-					<option key={o.value} value={o.value}>
-						{o.label}
-					</option>
-				))}
-			</select>
-			<ChevronDown
-				size={14}
-				className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-slate-400"
-			/>
 		</div>
 	);
 }

@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+
 
 // ============================================================
 // QUERIES
@@ -9,8 +9,6 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export const list = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		return await ctx.db.query("calendars").collect();
 	},
 });
@@ -18,8 +16,6 @@ export const list = query({
 export const getById = query({
 	args: { id: v.id("calendars") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
 		return await ctx.db.get(id);
 	},
 });
@@ -69,13 +65,6 @@ export const create = mutation({
 		active: v.boolean(),
 	},
 	handler: async (ctx, args) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-		const caller = await ctx.db.get(userId);
-		if (caller?.role !== "admin" && caller?.role !== "sales") {
-			throw new Error("Non autorise");
-		}
-
 		// Verify slug uniqueness
 		const existing = await ctx.db
 			.query("calendars")
@@ -125,13 +114,6 @@ export const update = mutation({
 		active: v.optional(v.boolean()),
 	},
 	handler: async (ctx, { id, ...fields }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-		const caller = await ctx.db.get(userId);
-		if (caller?.role !== "admin" && caller?.role !== "sales") {
-			throw new Error("Non autorise");
-		}
-
 		// If slug changed, verify uniqueness
 		if (fields.slug) {
 			const existing = await ctx.db
@@ -156,12 +138,6 @@ export const update = mutation({
 export const remove = mutation({
 	args: { id: v.id("calendars") },
 	handler: async (ctx, { id }) => {
-		const userId = await getAuthUserId(ctx);
-		if (!userId) throw new Error("Non authentifie");
-		const caller = await ctx.db.get(userId);
-		if (caller?.role !== "admin") {
-			throw new Error("Admin requis");
-		}
 		await ctx.db.delete(id);
 	},
 });

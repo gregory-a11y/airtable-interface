@@ -17,36 +17,46 @@ import {
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import {
 	Search,
-	ChevronDown,
 	GripVertical,
-	Phone,
 	Calendar,
-	User,
 	DollarSign,
+	Loader2,
+	User,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 const ETAPES = [
-	{ id: "appel_a_venir", label: "Appel a venir", color: "bg-blue-500" },
-	{ id: "appel_du_jour", label: "Appel du jour", color: "bg-amber-500" },
-	{ id: "follow_up", label: "Follow up", color: "bg-violet-500" },
-	{ id: "no_show", label: "No show", color: "bg-orange-500" },
-	{ id: "en_attente", label: "En attente", color: "bg-slate-500" },
-	{ id: "close", label: "Close", color: "bg-emerald-500" },
-	{ id: "perdu", label: "Perdu", color: "bg-red-500" },
+	{ id: "appel_a_venir", label: "Appel a venir", dot: "bg-blue-500" },
+	{ id: "appel_du_jour", label: "Appel du jour", dot: "bg-amber-500" },
+	{ id: "follow_up", label: "Follow up", dot: "bg-violet-500" },
+	{ id: "no_show", label: "No show", dot: "bg-red-500" },
+	{ id: "en_attente", label: "En attente", dot: "bg-gray-400" },
+	{ id: "close", label: "Close", dot: "bg-emerald-500" },
+	{ id: "perdu", label: "Perdu", dot: "bg-red-600" },
 ] as const;
 
 const SOURCE_COLORS: Record<string, string> = {
-	instagram: "bg-pink-100 text-pink-700",
-	facebook: "bg-blue-100 text-blue-700",
-	tiktok: "bg-slate-100 text-slate-700",
-	google: "bg-green-100 text-green-700",
-	referral: "bg-amber-100 text-amber-700",
-	organique: "bg-emerald-100 text-emerald-700",
-	autre: "bg-gray-100 text-gray-600",
+	instagram: "bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 ring-1 ring-pink-500/10",
+	facebook: "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/10",
+	tiktok: "bg-gray-50 dark:bg-gray-500/10 text-gray-700 dark:text-gray-400 ring-1 ring-gray-500/10",
+	google: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 ring-1 ring-green-500/10",
+	referral: "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/10",
+	organique: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/10",
+	autre: "bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 ring-1 ring-gray-500/10",
 };
 
 function getSourceBadgeClass(source: string) {
-	return SOURCE_COLORS[source.toLowerCase()] ?? "bg-gray-100 text-gray-600";
+	return (
+		SOURCE_COLORS[source.toLowerCase()] ??
+		"bg-gray-50 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400 ring-1 ring-gray-500/10"
+	);
 }
 
 function formatEUR(cents: number): string {
@@ -73,8 +83,8 @@ interface Lead {
 
 export default function PipelinePage() {
 	const [search, setSearch] = useState("");
-	const [sourceFilter, setSourceFilter] = useState("");
-	const [qualFilter, setQualFilter] = useState("");
+	const [sourceFilter, setSourceFilter] = useState("all");
+	const [qualFilter, setQualFilter] = useState("all");
 	const [activeId, setActiveId] = useState<string | null>(null);
 
 	const router = useRouter();
@@ -82,8 +92,8 @@ export default function PipelinePage() {
 
 	const data = useQuery(api.leads.getByEtape, {
 		search: search || undefined,
-		source: sourceFilter || undefined,
-		qualification: qualFilter || undefined,
+		source: sourceFilter !== "all" ? sourceFilter : undefined,
+		qualification: qualFilter !== "all" ? qualFilter : undefined,
 	});
 
 	const sensors = useSensors(
@@ -111,7 +121,6 @@ export default function PipelinePage() {
 			const leadId = active.id as Id<"leads">;
 			const newEtape = over.id as string;
 
-			// Find the lead's current etape
 			const currentLead = Object.values(data ?? {})
 				.flat()
 				.find((l) => l._id === leadId);
@@ -125,106 +134,120 @@ export default function PipelinePage() {
 	if (data === undefined) {
 		return (
 			<div className="flex h-64 items-center justify-center">
-				<div className="h-8 w-8 animate-spin rounded-full border-4 border-[#D0003C] border-t-transparent" />
+				<Loader2 className="h-8 w-8 animate-spin text-primary" />
 			</div>
 		);
 	}
 
 	return (
 		<div className="flex h-full flex-col">
-			{/* Header */}
-			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			{/* ── Header ─────────────────────────────────────────── */}
+			<div className="mb-6 flex items-center justify-between animate-fade-in">
 				<div>
-					<h1 className="text-2xl font-bold text-slate-900">Pipeline Vente</h1>
-					<p className="text-sm text-slate-500">Kanban — glissez les leads entre les etapes</p>
+					<h1 className="text-2xl font-bold tracking-tight text-foreground">
+						Pipeline Vente
+					</h1>
+					<p className="text-sm text-muted-foreground mt-1">
+						Kanban -- glissez les leads entre les etapes
+					</p>
 				</div>
 			</div>
 
-			{/* Filter Bar */}
-			<div className="mb-4 flex flex-wrap items-center gap-3">
+			{/* ── Filters ────────────────────────────────────────── */}
+			<div
+				className="mb-5 flex flex-wrap items-center gap-3 animate-fade-in"
+				style={{ animationDelay: "80ms" }}
+			>
 				<div className="relative flex-1 sm:max-w-xs">
 					<Search
 						size={16}
-						className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
+						className="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-muted-foreground pointer-events-none"
 					/>
-					<input
+					<Input
 						type="text"
 						placeholder="Rechercher un lead..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
+						className="pl-9 h-10 rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10"
 					/>
 				</div>
 
-				<div className="relative">
-					<select
-						value={sourceFilter}
-						onChange={(e) => setSourceFilter(e.target.value)}
-						className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-3 text-sm text-slate-700 focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
-					>
-						<option value="">Toutes les sources</option>
-						<option value="instagram">Instagram</option>
-						<option value="facebook">Facebook</option>
-						<option value="tiktok">TikTok</option>
-						<option value="google">Google</option>
-						<option value="referral">Referral</option>
-						<option value="organique">Organique</option>
-						<option value="autre">Autre</option>
-					</select>
-					<ChevronDown
-						size={14}
-						className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400"
-					/>
-				</div>
+				<Select value={sourceFilter} onValueChange={setSourceFilter}>
+					<SelectTrigger className="w-[180px] h-10 rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10">
+						<SelectValue placeholder="Toutes les sources" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">Toutes les sources</SelectItem>
+						<SelectItem value="instagram">Instagram</SelectItem>
+						<SelectItem value="facebook">Facebook</SelectItem>
+						<SelectItem value="tiktok">TikTok</SelectItem>
+						<SelectItem value="google">Google</SelectItem>
+						<SelectItem value="referral">Referral</SelectItem>
+						<SelectItem value="organique">Organique</SelectItem>
+						<SelectItem value="autre">Autre</SelectItem>
+					</SelectContent>
+				</Select>
 
-				<div className="relative">
-					<select
-						value={qualFilter}
-						onChange={(e) => setQualFilter(e.target.value)}
-						className="appearance-none rounded-lg border border-slate-200 bg-white py-2 pr-8 pl-3 text-sm text-slate-700 focus:border-[#D0003C] focus:outline-none focus:ring-1 focus:ring-[#D0003C]"
-					>
-						<option value="">Toutes qualifications</option>
-						<option value="qualifie">Qualifie</option>
-						<option value="non_qualifie">Non qualifie</option>
-						<option value="pending">Pending</option>
-					</select>
-					<ChevronDown
-						size={14}
-						className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400"
-					/>
-				</div>
+				<Select value={qualFilter} onValueChange={setQualFilter}>
+					<SelectTrigger className="w-[180px] h-10 rounded-xl bg-card dark:bg-[#2A2A28] shadow-sm dark:shadow-black/20 border-border/50 dark:border-white/10">
+						<SelectValue placeholder="Toutes qualifications" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">
+							Toutes qualifications
+						</SelectItem>
+						<SelectItem value="qualifie">Qualifie</SelectItem>
+						<SelectItem value="non_qualifie">
+							Non qualifie
+						</SelectItem>
+						<SelectItem value="pending">Pending</SelectItem>
+					</SelectContent>
+				</Select>
 			</div>
 
-			{/* Kanban Board */}
-			<DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+			{/* ── Kanban Board ────────────────────────────────────── */}
+			<DndContext
+				sensors={sensors}
+				onDragStart={handleDragStart}
+				onDragEnd={handleDragEnd}
+			>
 				<div className="flex flex-1 gap-4 overflow-x-auto pb-4">
 					{ETAPES.map((etape) => {
-						const leads = (data[etape.id] as Lead[] | undefined) ?? [];
+						const leads =
+							(data[etape.id] as Lead[] | undefined) ?? [];
 						return (
 							<KanbanColumn
 								key={etape.id}
 								etape={etape}
 								leads={leads}
-								onClickLead={(id) => router.push(`/sales/crm/${id}`)}
+								onClickLead={(id) =>
+									router.push(`/sales/crm/${id}`)
+								}
 							/>
 						);
 					})}
 				</div>
 
 				<DragOverlay>
-					{activeLead ? <LeadCardOverlay lead={activeLead as Lead} /> : null}
+					{activeLead ? (
+						<LeadCardOverlay lead={activeLead as Lead} />
+					) : null}
 				</DragOverlay>
 			</DndContext>
 		</div>
 	);
 }
 
+/* ================================================================
+   Kanban Column
+   ================================================================ */
+
 function KanbanColumn({
 	etape,
 	leads,
 	onClickLead,
 }: {
-	etape: { id: string; label: string; color: string };
+	etape: { id: string; label: string; dot: string };
 	leads: Lead[];
 	onClickLead: (id: string) => void;
 }) {
@@ -233,23 +256,34 @@ function KanbanColumn({
 	return (
 		<div
 			ref={setNodeRef}
-			className={`flex w-72 shrink-0 flex-col rounded-xl border bg-slate-50 transition-colors ${
-				isOver ? "border-[#D0003C] bg-red-50/30" : "border-slate-200"
+			className={`flex min-w-[280px] shrink-0 flex-col rounded-2xl p-3 transition-all duration-200 ${
+				isOver
+					? "bg-primary/5 ring-2 ring-primary/20"
+					: "bg-muted/30"
 			}`}
 		>
 			{/* Column Header */}
-			<div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
-				<div className={`h-2.5 w-2.5 rounded-full ${etape.color}`} />
-				<span className="text-sm font-semibold text-slate-800">{etape.label}</span>
-				<span className="ml-auto rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">
+			<div className="flex items-center gap-2 px-1 pb-3">
+				<span
+					className={`h-2.5 w-2.5 rounded-full ${etape.dot}`}
+				/>
+				<span className="text-sm font-semibold text-foreground">
+					{etape.label}
+				</span>
+				<span className="ml-auto inline-flex items-center justify-center bg-foreground/5 text-foreground text-xs font-medium rounded-full px-2 py-0.5 tabular-nums">
 					{leads.length}
 				</span>
 			</div>
 
 			{/* Cards */}
-			<div className="flex-1 space-y-2 overflow-y-auto p-3" style={{ maxHeight: "calc(100vh - 280px)" }}>
+			<div
+				className="flex-1 space-y-2.5 overflow-y-auto"
+				style={{ maxHeight: "calc(100vh - 280px)" }}
+			>
 				{leads.length === 0 ? (
-					<p className="py-4 text-center text-xs text-slate-400">Aucun lead</p>
+					<p className="py-8 text-center text-xs text-muted-foreground">
+						Aucun lead
+					</p>
 				) : (
 					leads.map((lead) => (
 						<DraggableLeadCard
@@ -264,10 +298,21 @@ function KanbanColumn({
 	);
 }
 
-function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
-	const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-		id: lead._id,
-	});
+/* ================================================================
+   Draggable Lead Card
+   ================================================================ */
+
+function DraggableLeadCard({
+	lead,
+	onClick,
+}: {
+	lead: Lead;
+	onClick: () => void;
+}) {
+	const { attributes, listeners, setNodeRef, transform, isDragging } =
+		useDraggable({
+			id: lead._id,
+		});
 
 	const style = transform
 		? {
@@ -279,8 +324,8 @@ function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void 
 		<div
 			ref={setNodeRef}
 			style={style}
-			className={`group cursor-pointer rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md ${
-				isDragging ? "opacity-50" : ""
+			className={`group bg-card rounded-xl p-4 shadow-sm dark:shadow-black/20 border border-border/40 transition-all duration-200 hover:shadow-md hover:border-primary/20 cursor-pointer ${
+				isDragging ? "opacity-40 scale-[0.98]" : ""
 			}`}
 			onClick={onClick}
 			onKeyDown={(e) => {
@@ -289,42 +334,71 @@ function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void 
 			role="button"
 			tabIndex={0}
 		>
-			<div className="mb-2 flex items-start justify-between">
+			{/* Top row: name + drag handle */}
+			<div className="flex items-start justify-between mb-2.5">
 				<div className="min-w-0 flex-1">
-					<p className="truncate text-sm font-medium text-slate-800">{lead.name}</p>
+					<p className="text-sm font-semibold text-foreground truncate">
+						{lead.name}
+					</p>
 					{lead.email && (
-						<p className="truncate text-xs text-slate-400">{lead.email}</p>
+						<p className="text-xs text-muted-foreground truncate mt-0.5">
+							{lead.email}
+						</p>
 					)}
 				</div>
 				<div
 					{...attributes}
 					{...listeners}
-					className="ml-2 cursor-grab rounded p-0.5 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100"
+					className="ml-2 cursor-grab rounded-lg p-1 text-muted-foreground/40 opacity-0 transition-all group-hover:opacity-100 hover:bg-muted/50 hover:text-muted-foreground"
 				>
 					<GripVertical size={14} />
 				</div>
 			</div>
 
-			<div className="flex flex-wrap items-center gap-1.5">
+			{/* Source badge + amount */}
+			<div className="flex flex-wrap items-center gap-2">
 				<span
-					className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${getSourceBadgeClass(lead.source)}`}
+					className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${getSourceBadgeClass(lead.source)}`}
 				>
 					{lead.source}
 				</span>
 
-				{lead.montantContracte !== undefined && lead.montantContracte > 0 && (
-					<span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-600">
-						<DollarSign size={10} />
-						{formatEUR(lead.montantContracte)}
-					</span>
-				)}
+				{lead.montantContracte !== undefined &&
+					lead.montantContracte > 0 && (
+						<span className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary">
+							<DollarSign size={12} />
+							{formatEUR(lead.montantContracte)}
+						</span>
+					)}
 			</div>
 
+			{/* Date */}
 			{(lead.dateAppelVente || lead.dateBookingCall) && (
-				<div className="mt-2 flex items-center gap-1 text-[10px] text-slate-400">
-					<Calendar size={10} />
-					{new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(
-						new Date(lead.dateAppelVente ?? lead.dateBookingCall!),
+				<div className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+					<Calendar size={11} className="shrink-0" />
+					{new Intl.DateTimeFormat("fr-FR", {
+						day: "numeric",
+						month: "short",
+					}).format(
+						new Date(
+							lead.dateAppelVente ?? lead.dateBookingCall!,
+						),
+					)}
+				</div>
+			)}
+
+			{/* Setter/Closer initials */}
+			{(lead.setterId || lead.closerId) && (
+				<div className="mt-2.5 flex items-center gap-1.5">
+					{lead.setterId && (
+						<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10 text-[10px] font-semibold text-blue-600 ring-1 ring-blue-500/10">
+							<User size={10} />
+						</span>
+					)}
+					{lead.closerId && (
+						<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary ring-1 ring-primary/10">
+							<User size={10} />
+						</span>
 					)}
 				</div>
 			)}
@@ -332,17 +406,34 @@ function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void 
 	);
 }
 
+/* ================================================================
+   Drag Overlay Card
+   ================================================================ */
+
 function LeadCardOverlay({ lead }: { lead: Lead }) {
 	return (
-		<div className="w-72 rounded-lg border border-[#D0003C] bg-white p-3 shadow-lg">
-			<p className="truncate text-sm font-medium text-slate-800">{lead.name}</p>
-			{lead.email && <p className="truncate text-xs text-slate-400">{lead.email}</p>}
-			<div className="mt-2 flex items-center gap-1.5">
+		<div className="w-[280px] bg-card rounded-xl p-4 shadow-lg dark:shadow-black/30 border-2 border-primary/30 ring-4 ring-primary/5">
+			<p className="text-sm font-semibold text-foreground truncate">
+				{lead.name}
+			</p>
+			{lead.email && (
+				<p className="text-xs text-muted-foreground truncate mt-0.5">
+					{lead.email}
+				</p>
+			)}
+			<div className="mt-2 flex items-center gap-2">
 				<span
-					className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${getSourceBadgeClass(lead.source)}`}
+					className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${getSourceBadgeClass(lead.source)}`}
 				>
 					{lead.source}
 				</span>
+				{lead.montantContracte !== undefined &&
+					lead.montantContracte > 0 && (
+						<span className="inline-flex items-center gap-0.5 text-sm font-semibold text-primary">
+							<DollarSign size={12} />
+							{formatEUR(lead.montantContracte)}
+						</span>
+					)}
 			</div>
 		</div>
 	);
