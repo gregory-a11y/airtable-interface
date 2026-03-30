@@ -6,12 +6,17 @@ FROM base AS deps
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile 2>/dev/null || bun install
 
-# Build — needs env vars at build time for NEXT_PUBLIC_*
+# Build — inject NEXT_PUBLIC_* at build time via .env.local
 FROM base AS builder
 ARG NEXT_PUBLIC_CONVEX_URL
 ARG NEXT_PUBLIC_CONVEX_SITE_URL
-ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
-ENV NEXT_PUBLIC_CONVEX_SITE_URL=$NEXT_PUBLIC_CONVEX_SITE_URL
+ARG CONVEX_DEPLOYMENT
+ARG RESEND_API_KEY
+ARG AUTH_SECRET
+
+# Create .env.local for Next.js build (NEXT_PUBLIC_* must be in .env at build time)
+RUN printf "NEXT_PUBLIC_CONVEX_URL=%s\nNEXT_PUBLIC_CONVEX_SITE_URL=%s\nCONVEX_DEPLOYMENT=%s\nRESEND_API_KEY=%s\nAUTH_SECRET=%s\n" \
+  "$NEXT_PUBLIC_CONVEX_URL" "$NEXT_PUBLIC_CONVEX_SITE_URL" "$CONVEX_DEPLOYMENT" "$RESEND_API_KEY" "$AUTH_SECRET" > .env.local
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
